@@ -39,6 +39,7 @@ dependencies:
   http: ^1.2.2
   html: ^0.15.5
   ogp_data_extract: ^0.1.5
+  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:

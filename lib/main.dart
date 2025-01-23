@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:url_book_marker/screens/bookmark_list_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_book_marker/screens/BookmarkListScreen.dart';
 
 void main() {
-  runApp(const MainScreen());
+  runApp(const ProviderScope(child: MainScreen()));
 }
 
 class MainScreen extends StatelessWidget {

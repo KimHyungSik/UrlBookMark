@@ -23,7 +23,6 @@ extension UrlMetadataFetcher on String {
   Future<UrlMetadata?> fetchMetadata() async {
     try {
       final OgpData? ogpData = await OgpDataExtract.execute(this);
-      print("LOGEE ogpData $ogpData");
       return UrlMetadata(
           title: ogpData?.title,
           image: ogpData?.image,
