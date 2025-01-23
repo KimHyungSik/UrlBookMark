@@ -53,4 +53,19 @@ class UrlBookmark {
       isFavorite: json['isFavorite'] ?? false,
     );
   }
+
+  @override
+  String toString() {
+    return 'Bookmark('
+        'id: $id, '
+        'url: $url, '
+        'title: $title, '
+        'description: ${description ?? "N/A"}, '
+        'createdAt: $createdAt, '
+        'folder: ${folder ?? "N/A"}, '
+        'tags: ${tags?.join(", ") ?? "N/A"}, '
+        'iconPath: ${iconPath ?? "N/A"}, '
+        'isFavorite: $isFavorite'
+        ')';
+  }
 }

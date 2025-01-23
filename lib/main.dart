@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:url_book_marker/screens/BookmarkListScreen.dart';
+import 'package:url_book_marker/screens/bookmark_list_screen.dart';
 
 void main() {
   runApp(const MainScreen());

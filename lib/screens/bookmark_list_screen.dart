@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_book_marker/model/url_marker.dart';
 import '../bookmark_manager.dart';
+import '../common/bottomsheet/add_url_bookmark_bottom_sheet.dart';
 
 class BookmarkListScreen extends StatefulWidget {
   const BookmarkListScreen({Key? key}) : super(key: key);
@@ -23,18 +24,33 @@ class _BookmarkListScreenState extends State<BookmarkListScreen> {
     setState(() {}); // 상태 업데이트
   }
 
+  Future<void> _showAddBookmarkBottomSheet() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // 키보드 올라올 때 전체 화면 조정
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => AddBookmarkBottomSheet(
+        onBookmarkAdded: () async {
+          await _loadBookmarks(); // 새 북마크 추가 후 리스트 갱신
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bookmarks'),
       ),
-      body: _bookmarkManager.UrlBookmarks.isEmpty
+      body: _bookmarkManager.urlBookmarks.isEmpty
           ? const Center(child: Text('No bookmarks found.'))
           : ListView.builder(
-        itemCount: _bookmarkManager.UrlBookmarks.length,
+        itemCount: _bookmarkManager.urlBookmarks.length,
         itemBuilder: (context, index) {
-          final bookmark = _bookmarkManager.UrlBookmarks[index];
+          final bookmark = _bookmarkManager.urlBookmarks[index];
           return BookmarkTile(
             bookmark: bookmark,
             onDelete: () async {
@@ -45,10 +61,7 @@ class _BookmarkListScreenState extends State<BookmarkListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          // Navigate to Add Bookmark Screen (not implemented yet)
-          // Add bookmark functionality can go here
-        },
+        onPressed: _showAddBookmarkBottomSheet, // 바텀시트 연결
         child: const Icon(Icons.add),
       ),
     );

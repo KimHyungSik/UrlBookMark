@@ -39,12 +39,11 @@ class _AddBookmarkBottomSheetState extends State<AddBookmarkBottomSheet> {
 
     try {
       final metadata = await url.fetchMetadata();
-      print("LOGEE $metadata");
       final newBookmark = UrlBookmark(
         url: url,
-        title: metadata.title ?? url,
-        description: metadata.description,
-        iconPath: metadata.image,
+        title: metadata?.title ?? url,
+        description: metadata?.description,
+        iconPath: metadata?.image,
         createdAt: DateTime.now(),
       );
 
