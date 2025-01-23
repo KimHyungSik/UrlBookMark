@@ -1,9 +1,6 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as html;
-import 'package:ogp_data_extract/ogp_data_extract.dart';
-import 'package:http/http.dart' as http;
 import 'package:html/parser.dart';
 
 class UrlMetadata {
@@ -47,7 +44,7 @@ extension UrlMetadataFetcher on String {
       // 1. HTTP GET 요청 보내기
       final response = await http.get(Uri.parse(this));
 
-      print("LOGEE response $response");
+      print("LOGEE response ${response.body}");
 
       if (response.statusCode != 200) {
         print('Failed to fetch metadata: ${response.statusCode}');
@@ -56,7 +53,7 @@ extension UrlMetadataFetcher on String {
 
       // 2. HTML 파싱
       final document = parse(utf8.decode(response.bodyBytes));
-      print("LOGEE document $document");
+      print("LOGEE document ${document.toString()}");
 
       // 3. OGP 메타데이터 추출
       final String? title = document

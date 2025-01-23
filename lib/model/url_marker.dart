@@ -41,6 +41,7 @@ class UrlBookmark {
       'tags': tags,
       'iconPath': iconPath,
       'isFavorite': isFavorite,
+      'metadata': metadata?.toJson(),
     };
   }
 
@@ -72,7 +73,7 @@ class UrlBookmark {
         'tags: ${tags?.join(", ") ?? "N/A"}, '
         'iconPath: ${iconPath ?? "N/A"}, '
         'isFavorite: $isFavorite,'
-        'metadata: $metadata,'
+        'metadata: ${metadata?.toString()},'
         ')';
   }
 

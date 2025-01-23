@@ -20,6 +20,7 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
     if (storedData != null) {
       final List<dynamic> jsonList = json.decode(storedData);
       state = jsonList.map((item) => UrlBookmark.fromJson(item)).toList();
+      print("LOGEE state ${state.toString()}");
     }
   }
 
