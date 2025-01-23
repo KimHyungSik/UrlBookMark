@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../common/riverpod.dart';
-import '../model/url_marker.dart';
+import '../bookmark_manager.dart';
+import 'bottomsheet/add_bookmark_bottom_sheet.dart';
 
 class BookmarkListScreen extends ConsumerWidget {
   const BookmarkListScreen({Key? key}) : super(key: key);
@@ -29,8 +31,13 @@ class BookmarkListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          ref.read(urlBookmarkProvider.notifier).addUrlBookmark(
-            UrlBookmark(id: DateTime.now().toString(), url: 'https://example.com', title: 'Example'),
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+            ),
+            builder: (_) => const AddBookmarkBottomSheet(),
           );
         },
         child: const Icon(Icons.add),
@@ -38,3 +45,6 @@ class BookmarkListScreen extends ConsumerWidget {
     );
   }
 }
+
+
+

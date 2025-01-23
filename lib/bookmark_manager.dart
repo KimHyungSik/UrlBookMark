@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_book_marker/model/url_metadata.dart';
 
 import 'model/url_marker.dart';
 
@@ -23,7 +24,9 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
   }
 
   Future<void> addUrlBookmark(UrlBookmark bookmark) async {
-    final updatedBookmarks = [...state, bookmark];
+    final metadata = await bookmark.url.fetchUrlMetadata();
+    final bookmarkWithMetadata = bookmark.copyWith(metadata: metadata);
+    final updatedBookmarks = [...state, bookmarkWithMetadata];
     state = updatedBookmarks;
     await _saveUrlBookmarks(updatedBookmarks);
   }
@@ -49,3 +52,7 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
     await prefs.setString(_storageKey, jsonData);
   }
 }
+
+final urlBookmarkProvider = StateNotifierProvider<UrlBookmarkManager, List<UrlBookmark>>(
+      (ref) => UrlBookmarkManager(),
+);
