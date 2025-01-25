@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../bookmark_manager.dart';
+import '../widget/bookmark_card.dart';
 import 'bottomsheet/add_bookmark_bottom_sheet.dart';
 
 class BookmarkListScreen extends ConsumerWidget {
@@ -15,19 +17,23 @@ class BookmarkListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bookmarks')),
-      body: ListView.builder(
-        itemCount: bookmarks.length,
-        itemBuilder: (context, index) {
-          final bookmark = bookmarks[index];
-          return ListTile(
-            title: Text(bookmark.title),
-            subtitle: Text(bookmark.url),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => ref.read(urlBookmarkProvider.notifier).deleteUrlBookmark(bookmark.id),
-            ),
-          );
-        },
+      body: Expanded(
+        child: MasonryGridView.builder(
+          gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+          ),
+          shrinkWrap: true,
+          itemCount: bookmarks.length,
+          itemBuilder: (context, index) {
+            final bookmark = bookmarks[index];
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: BookmarkCard(
+                bookmark: bookmark,
+              ),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -45,6 +51,3 @@ class BookmarkListScreen extends ConsumerWidget {
     );
   }
 }
-
-
-

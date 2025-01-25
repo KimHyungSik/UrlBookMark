@@ -42,9 +42,17 @@ extension UrlMetadataFetcher on String {
   Future<UrlMetadata?> fetchUrlMetadata() async {
     try {
       // 1. HTTP GET 요청 보내기
-      final response = await http.get(Uri.parse(this));
-
-      print("LOGEE response ${response.body}");
+      final response = await http.get(
+        Uri.parse(
+          this,
+        ),
+        headers: {
+          'user-agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+          'accept': 'gzip, deflate, br',
+          'accept-language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+      );
 
       if (response.statusCode != 200) {
         print('Failed to fetch metadata: ${response.statusCode}');
@@ -53,7 +61,6 @@ extension UrlMetadataFetcher on String {
 
       // 2. HTML 파싱
       final document = parse(utf8.decode(response.bodyBytes));
-      print("LOGEE document ${document.toString()}");
 
       // 3. OGP 메타데이터 추출
       final String? title = document

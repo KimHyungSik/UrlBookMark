@@ -14,6 +14,7 @@ class UrlBookmark {
   final UrlMetadata? metadata;
 
   String get title => customTitle ?? metadata?.title ?? url;
+  String get description => customDescription ?? metadata?.description ?? '';
 
   UrlBookmark({
     String? id,
