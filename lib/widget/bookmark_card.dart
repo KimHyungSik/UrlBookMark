@@ -38,6 +38,7 @@ class BookmarkCard extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey[300],
                       alignment: Alignment.center,
+                      height: 150,
                       child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   )
