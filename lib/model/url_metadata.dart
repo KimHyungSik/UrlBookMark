@@ -80,14 +80,12 @@ extension UrlMetadataFetcher on String {
           ?.attributes['content'];
 
       // 4. UrlMetadata 객체로 반환
-      print("LOGEE $title $description $image");
       return UrlMetadata(
         title: title,
         description: description,
         image: image,
       );
     } catch (e) {
-      print('LOGEE Error fetching metadata: $e');
       return null;
     }
   }
