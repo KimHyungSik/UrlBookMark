@@ -24,9 +24,7 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
   }
 
   Future<void> addUrlBookmark(UrlBookmark bookmark) async {
-    final metadata = await bookmark.url.fetchUrlMetadata();
-    final bookmarkWithMetadata = bookmark.copyWith(metadata: metadata);
-    final updatedBookmarks = [...state, bookmarkWithMetadata];
+    final updatedBookmarks = [...state, bookmark];
     state = updatedBookmarks;
     await _saveUrlBookmarks(updatedBookmarks);
   }
