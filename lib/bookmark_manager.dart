@@ -44,6 +44,12 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
     await _saveUrlBookmarks(updatedBookmarks);
   }
 
+  Future<void> deleteUrlBookmarks(List<String> ids) async {
+    final updatedBookmarks = state.where((bookmark) => !ids.contains(bookmark.id)).toList();
+    state = updatedBookmarks;
+    await _saveUrlBookmarks(updatedBookmarks);
+  }
+
   Future<void> _saveUrlBookmarks(List<UrlBookmark> bookmarks) async {
     final prefs = await SharedPreferences.getInstance();
     final String jsonData = json.encode(bookmarks.map((b) => b.toJson()).toList());

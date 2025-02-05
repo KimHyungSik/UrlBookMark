@@ -6,20 +6,21 @@ import '../model/url_marker.dart';
 
 class BookmarkCard extends StatelessWidget {
   final UrlBookmark bookmark;
+  final VoidCallback? onTap;
 
   const BookmarkCard({
     Key? key,
     required this.bookmark,
+    this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        try {
-          _launchUrl(Uri.parse(bookmark.url));
-        } catch (e) {
-          print('Failed to launch URL: $e');
+        if (onTap != null) {
+          onTap!();
+          return;
         }
       },
       child: Container(
@@ -82,14 +83,5 @@ class BookmarkCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _launchUrl(Uri url) async {
-    if (!await launchUrl(
-      url = url,
-      mode: LaunchMode.externalApplication
-    )) {
-      throw Exception('Could not launch $url');
-    }
   }
 }
