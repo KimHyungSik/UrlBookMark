@@ -64,24 +64,53 @@ class BookmarkCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (bookmark.metadata?.description == null) SizedBox(height: 10),
-            if (bookmark.metadata?.description != null)
+            if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(
-                    bottom: 10, top: 4, left: 8, right: 8),
-                child: Text(
-                  bookmark.metadata!.description!,
-                  style: TextStyle(
-                    fontSize: 14.0,
-                    color: descriptionTextColor,
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: bookmark.tags!
+                        .map(
+                          (tag) => Chip(
+                            label: Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize:12,
+                              ),
+                            ),
+                            backgroundColor: Colors.white,
+                          ),
+                        )
+                        .toList(),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+            _description(bookmark.metadata?.description),
           ],
         ),
       ),
     );
+  }
+
+  Widget _description(String? description) {
+    if (description == null) {
+      return SizedBox(height: 10);
+    } else {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10, top: 4, left: 8, right: 8),
+        child: Text(
+          bookmark.metadata!.description!,
+          style: TextStyle(
+            fontSize: 14.0,
+            color: descriptionTextColor,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
   }
 }
