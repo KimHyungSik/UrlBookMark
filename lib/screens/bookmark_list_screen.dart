@@ -52,6 +52,7 @@ class BookmarkListScreen extends ConsumerWidget {
                           )
                         else
                           SizedBox(width: 48), // 삭제 모드 아닐 때 균형 맞추기
+
                         if (!isDeleteMode)
                           Text(
                             "Bookmarks",
@@ -167,6 +168,7 @@ class BookmarkListScreen extends ConsumerWidget {
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
+                    isScrollControlled: true,
                     builder: (context) {
                       return const AddBookmarkBottomSheet();
                     },
