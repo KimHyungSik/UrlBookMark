@@ -32,65 +32,82 @@ class BookmarkCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            bookmark.metadata?.image != null
-                ? Image.network(
-                    bookmark.metadata!.image!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey[300],
-                      alignment: Alignment.center,
-                      height: 150,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  )
-                : Container(
-                    color: Colors.grey[300],
-                    height: 150,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.image,
-                      color: Colors.grey,
-                    ),
-                  ),
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
-              child: Text(
-                bookmark.title,
-                style: TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                    color: titleTextColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            if (bookmark.metadata?.image != null)
+              _networkImage()
+            else
+              _unknownImagae(),
+            _cardTitle(),
             if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: bookmark.tags!
-                        .map(
-                          (tag) => Chip(
-                            label: Text(
-                              tag,
-                              style: TextStyle(
-                                fontSize:12,
-                              ),
-                            ),
-                            backgroundColor: Colors.white,
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ),
+              _tags(),
             _description(bookmark.metadata?.description),
           ],
         ),
+      ),
+    );
+  }
+
+  Padding _tags() {
+    return Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: bookmark.tags!
+                      .map(
+                        (tag) => Chip(
+                          label: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            );
+  }
+
+  Padding _cardTitle() {
+    return Padding(
+            padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
+            child: Text(
+              bookmark.title,
+              style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                  color: titleTextColor),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+  }
+
+  Container _unknownImagae() {
+    return Container(
+      color: Colors.grey[300],
+      height: 150,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.image,
+        color: Colors.grey,
+      ),
+    );
+  }
+
+  Image _networkImage() {
+    return Image.network(
+      bookmark.metadata!.image!,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: Colors.grey[300],
+        alignment: Alignment.center,
+        height: 150,
+        child: const Icon(Icons.broken_image, color: Colors.grey),
       ),
     );
   }
