@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../common/colors.dart';
 import '../model/url_marker.dart';
+import '../screens/bottomsheet/bookmark_edit_bottom_sheet.dart';
 
 class BookmarkCard extends StatelessWidget {
   final UrlBookmark bookmark;
@@ -38,7 +39,7 @@ class BookmarkCard extends StatelessWidget {
                   _networkImage()
                 else
                   _unknownImagae(),
-                _moreIcon()
+                _moreIcon(context)
               ],
             ),
             _cardTitle(),
@@ -50,29 +51,39 @@ class BookmarkCard extends StatelessWidget {
     );
   }
 
-  GestureDetector _moreIcon() {
+  GestureDetector _moreIcon(BuildContext context) {
     return GestureDetector(
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(100),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Icon(
-                          Icons.more_vert,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) {
+            return BookmarkEditBottomSheet(
+              bookmark: bookmark,
+            );
+          },
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Align(
+          alignment: Alignment.topRight,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(100),
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(
+                Icons.more_vert,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Padding _tags() {
