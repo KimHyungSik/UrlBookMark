@@ -32,13 +32,17 @@ class BookmarkCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (bookmark.metadata?.image != null)
-              _networkImage()
-            else
-              _unknownImagae(),
+            Stack(
+              children: [
+                if (bookmark.metadata?.image != null)
+                  _networkImage()
+                else
+                  _unknownImagae(),
+                _moreIcon()
+              ],
+            ),
             _cardTitle(),
-            if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
-              _tags(),
+            if (bookmark.tags != null && bookmark.tags!.isNotEmpty) _tags(),
             _description(bookmark.metadata?.description),
           ],
         ),
@@ -46,45 +50,68 @@ class BookmarkCard extends StatelessWidget {
     );
   }
 
+  GestureDetector _moreIcon() {
+    return GestureDetector(
+                onTap: () {},
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(100),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.more_vert,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+  }
+
   Padding _tags() {
     return Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: bookmark.tags!
-                      .map(
-                        (tag) => Chip(
-                          label: Text(
-                            tag,
-                            style: TextStyle(
-                              fontSize: 12,
-                            ),
-                          ),
-                          backgroundColor: Colors.white,
-                        ),
-                      )
-                      .toList(),
+      padding: const EdgeInsets.only(left: 8.0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: bookmark.tags!
+              .map(
+                (tag) => Chip(
+                  label: Text(
+                    tag,
+                    style: TextStyle(
+                      fontSize: 12,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
                 ),
-              ),
-            );
+              )
+              .toList(),
+        ),
+      ),
+    );
   }
 
   Padding _cardTitle() {
     return Padding(
-            padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
-            child: Text(
-              bookmark.title,
-              style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
-                  color: titleTextColor),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          );
+      padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
+      child: Text(
+        bookmark.title,
+        style: TextStyle(
+            fontSize: 16.0, fontWeight: FontWeight.bold, color: titleTextColor),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
   Container _unknownImagae() {
