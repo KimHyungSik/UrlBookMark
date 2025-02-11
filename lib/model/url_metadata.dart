@@ -36,6 +36,18 @@ class UrlMetadata {
       description: json['description'],
     );
   }
+
+  UrlMetadata copyWith({
+    String? image,
+    String? title,
+    String? description,
+  }) {
+    return UrlMetadata(
+      image: image ?? this.image,
+      title: title ?? this.title,
+      description: description ?? this.description,
+    );
+  }
 }
 
 extension UrlMetadataFetcher on String {
