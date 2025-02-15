@@ -114,6 +114,7 @@ class BookmarkListScreen extends ConsumerWidget {
                         children: [
                           BookmarkCard(
                             bookmark: bookmark,
+                            isDeleteMode: isDeleteMode,
                             onTap: () {
                               if (isDeleteMode) {
                                 final updatedSelection =

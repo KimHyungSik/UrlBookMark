@@ -8,12 +8,14 @@ import '../screens/bottomsheet/bookmark_edit_bottom_sheet.dart';
 class BookmarkCard extends StatelessWidget {
   final UrlBookmark bookmark;
   final VoidCallback? onTap;
+  final bool isDeleteMode;
 
   const BookmarkCard({
-    Key? key,
+    super.key,
     required this.bookmark,
+    this.isDeleteMode = false,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class BookmarkCard extends StatelessWidget {
                   _networkImage()
                 else
                   _unknownImagae(),
-                _moreIcon(context)
+                if (!isDeleteMode) _moreIcon(context)
               ],
             ),
             _cardTitle(),
