@@ -14,20 +14,22 @@ class UrlBookmark {
   final UrlMetadata? metadata;
 
   String get title => customTitle ?? metadata?.title ?? url;
+
   String get description => customDescription ?? metadata?.description ?? '';
 
-  UrlBookmark({
-    String? id,
-    required this.url,
-    this.customTitle,
-    this.customDescription,
-    DateTime? createdAt,
-    this.folder,
-    this.tags,
-    this.iconPath,
-    this.isFavorite = false,
-    this.metadata
-  })  : id = id ?? const Uuid().v4(), // UUID 생성
+  UrlBookmark(
+      {String? id,
+      required this.url,
+      this.customTitle,
+      this.customDescription,
+      DateTime? createdAt,
+      this.folder,
+      this.tags,
+      this.iconPath,
+      this.isFavorite = false,
+      this.metadata})
+      : id = id ?? const Uuid().v4(),
+        // UUID 생성
         createdAt = createdAt ?? DateTime.now(); // 생성 날짜 기본값
 
   // JSON 직렬화
@@ -58,7 +60,9 @@ class UrlBookmark {
       tags: (json['tags'] as List<dynamic>?)?.cast<String>(),
       iconPath: json['iconPath'],
       isFavorite: json['isFavorite'] ?? false,
-      metadata: json['metadata'] != null ? UrlMetadata.fromJson(json['metadata']) : null,
+      metadata: json['metadata'] != null
+          ? UrlMetadata.fromJson(json['metadata'])
+          : null,
     );
   }
 
@@ -101,6 +105,23 @@ class UrlBookmark {
       iconPath: iconPath ?? this.iconPath,
       isFavorite: isFavorite ?? this.isFavorite,
       metadata: metadata ?? this.metadata,
+    );
+  }
+
+  UrlBookmark copyWithMetadata({
+    UrlMetadata? metadata,
+  }) {
+    return UrlBookmark(
+      id: id,
+      url: url,
+      customTitle: customTitle,
+      customDescription: customDescription,
+      createdAt: createdAt,
+      folder: folder,
+      tags: tags,
+      iconPath: iconPath,
+      isFavorite: isFavorite,
+      metadata: metadata,
     );
   }
 }

@@ -85,53 +85,59 @@ class _AddBookmarkBottomSheetState
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      child: IntrinsicHeight( // 내용에 따라 자동 조정
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // 내용에 따라 크기 조절
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
-                  top: 16.0,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Add Bookmark',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16.0),
-                      if (metadataState.isLoading)
-                        Center(child: CircularProgressIndicator()),
-
-                      _buildMetadataPreview(metadataState), // 미리보기 위젯
-
-                      if (_urlController.text.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          children: generateTags(_urlController.text.trim())
-                              .map((tag) => Chip(label: Text(tag)))
-                              .toList(),
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: IntrinsicHeight(
+          // 내용에 따라 자동 조정
+          child: Column(
+            mainAxisSize: MainAxisSize.min, // 내용에 따라 크기 조절
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: 16.0,
+                    right: 16.0,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
+                    top: 16.0,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Add Bookmark',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                      const SizedBox(height: 16.0),
-                    ],
+                        const SizedBox(height: 16.0),
+                        if (metadataState.isLoading)
+                          Center(child: CircularProgressIndicator()),
+
+                        _buildMetadataPreview(metadataState), // 미리보기 위젯
+
+                        if (_urlController.text.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            children: generateTags(_urlController.text.trim())
+                                .map((tag) => Chip(label: Text(tag)))
+                                .toList(),
+                          ),
+                        const SizedBox(height: 16.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            _buildUrlInputField(), // URL 입력 폼을 최하단에 배치
-            _buildAddButton(),
-          ],
+              _buildUrlInputField(), // URL 입력 폼을 최하단에 배치
+              _buildAddButton(),
+            ],
+          ),
         ),
       ),
     );
@@ -154,15 +160,14 @@ class _AddBookmarkBottomSheetState
 
   SafeArea _buildAddButton() {
     return SafeArea(
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: ElevatedButton(
-            onPressed: _addBookmark,
-            child: const Text('Add Bookmark'),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: ElevatedButton(
+          onPressed: _addBookmark,
+          child: const Text('Add Bookmark'),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildMetadataPreview(AsyncValue<UrlMetadata?> metadataState) {

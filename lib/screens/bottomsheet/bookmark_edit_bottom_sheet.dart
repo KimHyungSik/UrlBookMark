@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,53 +8,80 @@ import '../../model/url_metadata.dart';
 
 final bookmarkProvider = StateProvider<UrlBookmark?>((ref) => null);
 
-class BookmarkEditBottomSheet extends ConsumerWidget {
+class BookmarkEditBottomSheet extends ConsumerStatefulWidget {
   final UrlBookmark bookmark;
 
-  const BookmarkEditBottomSheet({Key? key, required this.bookmark})
-      : super(key: key);
+  BookmarkEditBottomSheet({Key? key, required this.bookmark}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarkState = ref.watch(bookmarkProvider);
-    final bookmarkNotifier = ref.read(bookmarkProvider.notifier);
+  ConsumerState<BookmarkEditBottomSheet> createState() =>
+      _BookmarkEditBottomSheetState();
+}
 
+class _BookmarkEditBottomSheetState
+    extends ConsumerState<BookmarkEditBottomSheet> {
+  late TextEditingController _urlController;
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _urlController = TextEditingController(text: widget.bookmark.url);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      bookmarkNotifier.state = bookmark;
+      ref.read(bookmarkProvider.notifier).state = widget.bookmark;
     });
+  }
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-          minWidth: MediaQuery.of(context).size.width,
-          minHeight: MediaQuery.of(context).size.height * 0.2),
-      child: IntrinsicHeight(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildMetadataPreview(bookmark.metadata),
-            ],
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookmarkState = ref.watch(bookmarkProvider);
+
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            minWidth: MediaQuery.of(context).size.width,
+            minHeight: MediaQuery.of(context).size.height * 0.2),
+        child: IntrinsicHeight(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildMetadataPreviewImage(bookmarkState?.metadata?.image),
+                TextFormField(
+                  controller: _urlController,
+                  decoration: InputDecoration(labelText: 'URL'),
+                  onChanged: _onUrlChanged,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildMetadataPreview(UrlMetadata? metadata) {
-    if (metadata == null) return SizedBox.shrink();
+  Widget _buildMetadataPreviewImage(String? imageUrl) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (metadata.image != null)
+          if (imageUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
               child: Image.network(
-                metadata.image!,
-                height: 120,
+                imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
@@ -63,22 +92,25 @@ class BookmarkEditBottomSheet extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 8),
-          Text(
-            metadata.title ?? "No Title",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          if (metadata.description != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                metadata.description!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-            ),
         ],
       ),
+    );
+  }
+
+  void _onUrlChanged(String url) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(
+      const Duration(seconds: 1),
+      () {
+        url.fetchUrlMetadata().then(
+          (metadata) {
+            ref.read(bookmarkProvider.notifier).state = ref
+                .read(bookmarkProvider.notifier)
+                .state
+                ?.copyWithMetadata(metadata: metadata);
+          },
+        );
+      },
     );
   }
 }
