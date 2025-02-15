@@ -85,8 +85,8 @@ class UrlBookmark {
   UrlBookmark copyWith({
     String? id,
     String? url,
-    String? title,
-    String? description,
+    String? customTitle,
+    String? customDescription,
     DateTime? createdAt,
     String? folder,
     List<String>? tags,
@@ -97,8 +97,8 @@ class UrlBookmark {
     return UrlBookmark(
       id: id ?? this.id,
       url: url ?? this.url,
-      customTitle: title ?? this.customTitle,
-      customDescription: description ?? this.customDescription,
+      customTitle: customTitle ?? this.customTitle,
+      customDescription: customDescription ?? this.customDescription,
       createdAt: createdAt ?? this.createdAt,
       folder: folder ?? this.folder,
       tags: tags ?? this.tags,
