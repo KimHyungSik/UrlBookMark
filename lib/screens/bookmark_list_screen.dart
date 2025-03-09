@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../bookmark_manager.dart';
 import '../common/pressable_button.dart';
 import '../model/url_marker.dart';
 import '../widget/bookmark_card.dart';
+import 'bookmark_list_screen_view_model.dart';
 import 'bottomsheet/add_bookmark_bottom_sheet.dart';
-
-// View mode provider (grid vs list)
-final viewModeProvider = StateProvider<bool>((ref) => true); // true = grid, false = list
 
 // Delete mode provider
 final isDeleteModeProvider = StateProvider<bool>((ref) => false);
@@ -64,8 +63,8 @@ class BookmarkListScreen extends ConsumerWidget {
         if (!isDeleteMode)
           IconButton(
             icon: Icon(isGridView ? Icons.view_list : Icons.grid_view, color: Colors.white),
-            onPressed: () => ref.read(viewModeProvider.notifier).state = !isGridView,
-            tooltip: isGridView ? "Switch to list view" : "Switch to grid view",
+            onPressed: () => ref.read(viewModeProvider.notifier).toggleViewMode(),
+            tooltip: isGridView ? "리스트 뷰로 전환" : "그리드 뷰로 전환",
           ),
 
         // 삭제 모드 버튼
@@ -73,7 +72,7 @@ class BookmarkListScreen extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.white),
             onPressed: () => ref.read(isDeleteModeProvider.notifier).state = true,
-            tooltip: "Delete mode",
+            tooltip: "삭제 모드",
           ),
 
         // 삭제 확인 버튼 (삭제 모드일 때)
@@ -86,7 +85,7 @@ class BookmarkListScreen extends ConsumerWidget {
             onPressed: selectedBookmarks.isNotEmpty
                 ? () => _showDeleteConfirmation(context, ref, selectedBookmarks)
                 : null,
-            tooltip: "Delete selected",
+            tooltip: "선택 항목 삭제",
           ),
       ],
     );

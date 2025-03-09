@@ -44,7 +44,7 @@ class BookmarkCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image section
-            _buildImageSection(),
+            _buildImageSection(context),
 
             // Content section
             Padding(
@@ -131,7 +131,7 @@ class BookmarkCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(BuildContext context) {
     return Stack(
       children: [
         _buildThumbnail(),
@@ -152,22 +152,53 @@ class BookmarkCard extends StatelessWidget {
               ),
             ),
           ),
+        // Add edit button to grid view
+        if (!isDeleteMode)
+          Positioned(
+            top: 8,
+            right: bookmark.isFavorite ? 40 : 8,
+            child: GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => BookmarkEditBottomSheet(bookmark: bookmark),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.edit,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildThumbnail() {
     if (bookmark.metadata?.image != null) {
-      return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Image.network(
-          bookmark.metadata!.image!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return _buildPlaceholder(showLoader: true);
-          },
+      return Container(
+        constraints: BoxConstraints(minHeight: 150), // Add minimum height
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Image.network(
+            bookmark.metadata!.image!,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return _buildPlaceholder(showLoader: true);
+            },
+          ),
         ),
       );
     } else {
@@ -177,6 +208,7 @@ class BookmarkCard extends StatelessWidget {
 
   Widget _buildPlaceholder({bool showLoader = false}) {
     return Container(
+      height: 150, // Fixed minimum height for placeholders
       color: Colors.grey[200],
       child: Center(
         child: showLoader
@@ -272,6 +304,22 @@ class BookmarkCard extends StatelessWidget {
             );
           },
           tooltip: "Edit bookmark",
+        ),
+
+        // Visit link button
+        IconButton(
+          icon: Icon(Icons.open_in_new, color: Colors.blue[700]),
+          onPressed: () async {
+            try {
+              final url = Uri.parse(bookmark.url);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            } catch (e) {
+              print('Failed to launch URL: $e');
+            }
+          },
+          tooltip: "Open in browser",
         ),
       ],
     );
