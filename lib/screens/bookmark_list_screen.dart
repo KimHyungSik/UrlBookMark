@@ -9,56 +9,8 @@ import '../model/url_marker.dart';
 import '../widget/bookmark_card.dart';
 import 'bottomsheet/add_bookmark_bottom_sheet.dart';
 
-// Search query provider
-final searchQueryProvider = StateProvider<String>((ref) => '');
-
-// Sort options for bookmarks
-enum SortOption {
-  newest,
-  oldest,
-  alphabetical,
-  favorites,
-}
-
-// Current sort option provider
-final sortOptionProvider = StateProvider<SortOption>((ref) => SortOption.newest);
-
-// Filtered and sorted bookmarks provider
-final filteredBookmarksProvider = Provider<List<UrlBookmark>>((ref) {
-  final bookmarks = ref.watch(urlBookmarkProvider);
-  final searchQuery = ref.watch(searchQueryProvider);
-  final sortOption = ref.watch(sortOptionProvider);
-
-  // Filter bookmarks based on search query
-  List<UrlBookmark> filteredBookmarks = bookmarks;
-  if (searchQuery.isNotEmpty) {
-    final query = searchQuery.toLowerCase();
-    filteredBookmarks = bookmarks.where((bookmark) {
-      return bookmark.title.toLowerCase().contains(query) ||
-          bookmark.description.toLowerCase().contains(query) ||
-          bookmark.url.toLowerCase().contains(query) ||
-          (bookmark.tags?.any((tag) => tag.toLowerCase().contains(query)) ?? false);
-    }).toList();
-  }
-
-  // Sort bookmarks based on selected option
-  switch (sortOption) {
-    case SortOption.newest:
-      filteredBookmarks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      break;
-    case SortOption.oldest:
-      filteredBookmarks.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      break;
-    case SortOption.alphabetical:
-      filteredBookmarks.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-      break;
-    case SortOption.favorites:
-      filteredBookmarks.sort((a, b) => b.isFavorite ? 1 : (a.isFavorite ? -1 : 0));
-      break;
-  }
-
-  return filteredBookmarks;
-});
+// View mode provider (grid vs list)
+final viewModeProvider = StateProvider<bool>((ref) => true); // true = grid, false = list
 
 // Delete mode provider
 final isDeleteModeProvider = StateProvider<bool>((ref) => false);
@@ -71,19 +23,27 @@ class BookmarkListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarks = ref.watch(filteredBookmarksProvider);
+    final bookmarks = ref.watch(urlBookmarkProvider);
     final isDeleteMode = ref.watch(isDeleteModeProvider);
     final selectedBookmarks = ref.watch(selectedBookmarksProvider);
+    final isGridView = ref.watch(viewModeProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
-      appBar: _buildAppBar(context, ref, isDeleteMode, selectedBookmarks),
-      body: _buildBody(context, ref, bookmarks, isDeleteMode, selectedBookmarks),
-      floatingActionButton: !isDeleteMode ? _buildFloatingActionButton(context) : null,
+      appBar: _buildAppBar(context, ref, isDeleteMode, selectedBookmarks, isGridView),
+      body: _buildBookmarkList(context, ref, bookmarks, isDeleteMode, selectedBookmarks, isGridView),
+      floatingActionButton: !isDeleteMode ? _buildAddButton(context) : null,
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref, bool isDeleteMode, Set<String> selectedBookmarks) {
+  // 앱바 구성
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context,
+      WidgetRef ref,
+      bool isDeleteMode,
+      Set<String> selectedBookmarks,
+      bool isGridView
+      ) {
     return AppBar(
       backgroundColor: Colors.grey[900],
       elevation: 0,
@@ -100,194 +60,230 @@ class BookmarkListScreen extends ConsumerWidget {
       )
           : null,
       actions: [
-        if (!isDeleteMode) ...[
-          PopupMenuButton<SortOption>(
-            icon: Icon(Icons.sort, color: Colors.white),
-            onSelected: (SortOption option) {
-              ref.read(sortOptionProvider.notifier).state = option;
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: SortOption.newest,
-                child: Text("Newest First"),
-              ),
-              PopupMenuItem(
-                value: SortOption.oldest,
-                child: Text("Oldest First"),
-              ),
-              PopupMenuItem(
-                value: SortOption.alphabetical,
-                child: Text("Alphabetical"),
-              ),
-              PopupMenuItem(
-                value: SortOption.favorites,
-                child: Text("Favorites First"),
-              ),
-            ],
-          ),
+        // 그리드/리스트 뷰 전환 버튼
+        if (!isDeleteMode)
           IconButton(
-            icon: Icon(Icons.delete, color: Colors.white),
-            onPressed: () {
-              ref.read(isDeleteModeProvider.notifier).state = true;
-            },
+            icon: Icon(isGridView ? Icons.view_list : Icons.grid_view, color: Colors.white),
+            onPressed: () => ref.read(viewModeProvider.notifier).state = !isGridView,
+            tooltip: isGridView ? "Switch to list view" : "Switch to grid view",
           ),
-        ],
+
+        // 삭제 모드 버튼
+        if (!isDeleteMode)
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.white),
+            onPressed: () => ref.read(isDeleteModeProvider.notifier).state = true,
+            tooltip: "Delete mode",
+          ),
+
+        // 삭제 확인 버튼 (삭제 모드일 때)
         if (isDeleteMode)
           IconButton(
-            icon: Icon(Icons.delete, color: selectedBookmarks.isNotEmpty ? Colors.red : Colors.grey),
+            icon: Icon(
+              Icons.delete,
+              color: selectedBookmarks.isNotEmpty ? Colors.red : Colors.grey,
+            ),
             onPressed: selectedBookmarks.isNotEmpty
-                ? () {
-              // Show confirmation dialog
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text("Delete Bookmarks"),
-                  content: Text("Are you sure you want to delete ${selectedBookmarks.length} bookmark(s)?"),
-                  actions: [
-                    TextButton(
-                      child: Text("Cancel"),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    TextButton(
-                      child: Text("Delete", style: TextStyle(color: Colors.red)),
-                      onPressed: () {
-                        ref.read(urlBookmarkProvider.notifier).deleteUrlBookmarks(selectedBookmarks.toList());
-                        ref.read(selectedBookmarksProvider.notifier).state = {};
-                        ref.read(isDeleteModeProvider.notifier).state = false;
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Bookmarks deleted successfully")),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-            }
+                ? () => _showDeleteConfirmation(context, ref, selectedBookmarks)
                 : null,
+            tooltip: "Delete selected",
           ),
       ],
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, List<UrlBookmark> bookmarks, bool isDeleteMode, Set<String> selectedBookmarks) {
+  // 북마크 목록 표시 (그리드 또는 리스트)
+  Widget _buildBookmarkList(
+      BuildContext context,
+      WidgetRef ref,
+      List<UrlBookmark> bookmarks,
+      bool isDeleteMode,
+      Set<String> selectedBookmarks,
+      bool isGridView
+      ) {
+    // 북마크가 없는 경우 빈 상태 표시
     if (bookmarks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              "No bookmarks yet",
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Add your first bookmark by tapping the + button",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
+      return _buildEmptyState();
+    }
+
+    // 그리드 뷰 표시
+    if (isGridView) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: MasonryGridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          itemCount: bookmarks.length,
+          itemBuilder: (context, index) => _buildBookmarkItem(
+              context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
+          ),
         ),
       );
     }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: MasonryGridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+    // 리스트 뷰 표시
+    else {
+      return ListView.builder(
+        padding: const EdgeInsets.all(16.0),
         itemCount: bookmarks.length,
-        itemBuilder: (context, index) {
-          final bookmark = bookmarks[index];
-          final isSelected = selectedBookmarks.contains(bookmark.id);
+        itemBuilder: (context, index) => _buildBookmarkItem(
+            context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
+        ),
+      );
+    }
+  }
 
-          return GestureDetector(
-            onLongPress: !isDeleteMode ? () {
-              ref.read(isDeleteModeProvider.notifier).state = true;
-              ref.read(selectedBookmarksProvider.notifier).state = {bookmark.id};
-            } : null,
-            child: Stack(
-              children: [
-                BookmarkCard(
-                  bookmark: bookmark,
-                  isDeleteMode: isDeleteMode,
-                  onTap: () {
-                    if (isDeleteMode) {
-                      final updatedSelection = Set<String>.from(selectedBookmarks);
-                      if (isSelected) {
-                        updatedSelection.remove(bookmark.id);
-                      } else {
-                        updatedSelection.add(bookmark.id);
-                      }
-                      ref.read(selectedBookmarksProvider.notifier).state = updatedSelection;
-                    } else {
-                      try {
-                        _launchUrl(Uri.parse(bookmark.url));
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Failed to open URL: ${e.toString()}")),
-                        );
-                      }
-                    }
-                  },
+  // 개별 북마크 아이템 구성
+  Widget _buildBookmarkItem(
+      BuildContext context,
+      WidgetRef ref,
+      UrlBookmark bookmark,
+      bool isDeleteMode,
+      Set<String> selectedBookmarks,
+      bool isGridView
+      ) {
+    final isSelected = selectedBookmarks.contains(bookmark.id);
+
+    return GestureDetector(
+      onLongPress: !isDeleteMode ? () {
+        ref.read(isDeleteModeProvider.notifier).state = true;
+        ref.read(selectedBookmarksProvider.notifier).state = {bookmark.id};
+      } : null,
+      child: Stack(
+        children: [
+          BookmarkCard(
+            bookmark: bookmark,
+            isDeleteMode: isDeleteMode,
+            isGridMode: isGridView,
+            onTap: () {
+              if (isDeleteMode) {
+                _toggleSelection(ref, bookmark.id, selectedBookmarks);
+              } else {
+                _launchBookmarkUrl(context, bookmark.url);
+              }
+            },
+          ),
+
+          // 선택 표시 (삭제 모드일 때)
+          if (isDeleteMode)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.red : Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
-                if (isDeleteMode)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: CircleAvatar(
-                      backgroundColor: isSelected ? Colors.red : Colors.white54,
-                      radius: 12,
-                      child: isSelected
-                          ? Icon(Icons.check, color: Colors.white, size: 16)
-                          : Icon(Icons.circle_outlined, color: Colors.black, size: 16),
-                    ),
-                  ),
-                if (!isDeleteMode && bookmark.isFavorite)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.star, color: Colors.amber, size: 16),
-                    ),
-                  ),
-              ],
+                padding: EdgeInsets.all(2),
+                child: Icon(
+                  isSelected ? Icons.check : Icons.circle_outlined,
+                  color: isSelected ? Colors.white : Colors.grey[800],
+                  size: 18,
+                ),
+              ),
             ),
-          );
-        },
+        ],
       ),
     );
   }
 
-  Widget _buildFloatingActionButton(BuildContext context) {
+  // 북마크가 없을 때 표시할 빈 상태
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "북마크가 없습니다",
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "오른쪽 하단의 + 버튼을 눌러 북마크를 추가해보세요",
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 추가 버튼
+  Widget _buildAddButton(BuildContext context) {
     return PressableButton(
       height: 58,
       width: 58,
-      onPressed: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) {
-            return const AddBookmarkBottomSheet();
-          },
-        );
-      },
+      onPressed: () => _showAddBookmarkSheet(context),
       child: Icon(Icons.add, size: 32, color: Colors.black),
     );
   }
 
-  // Fixed URL launcher function (original had a bug with url = url assignment)
-  Future<void> _launchUrl(Uri url) async {
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
+  // 선택 토글 함수
+  void _toggleSelection(WidgetRef ref, String bookmarkId, Set<String> currentSelection) {
+    final updatedSelection = Set<String>.from(currentSelection);
+    if (updatedSelection.contains(bookmarkId)) {
+      updatedSelection.remove(bookmarkId);
+    } else {
+      updatedSelection.add(bookmarkId);
     }
+    ref.read(selectedBookmarksProvider.notifier).state = updatedSelection;
+  }
+
+  // URL 열기
+  Future<void> _launchBookmarkUrl(BuildContext context, String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch $url');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("URL을 열 수 없습니다: $url")),
+      );
+    }
+  }
+
+  // 북마크 추가 시트 표시
+  void _showAddBookmarkSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddBookmarkBottomSheet(),
+    );
+  }
+
+  // 삭제 확인 대화상자
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Set<String> selectedBookmarks) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("북마크 삭제"),
+        content: Text("선택한 ${selectedBookmarks.length}개의 북마크를 삭제하시겠습니까?"),
+        actions: [
+          TextButton(
+            child: Text("취소"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text("삭제", style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              ref.read(urlBookmarkProvider.notifier).deleteUrlBookmarks(selectedBookmarks.toList());
+              ref.read(selectedBookmarksProvider.notifier).state = {};
+              ref.read(isDeleteModeProvider.notifier).state = false;
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("북마크가 삭제되었습니다")),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

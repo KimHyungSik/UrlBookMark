@@ -9,165 +9,271 @@ class BookmarkCard extends StatelessWidget {
   final UrlBookmark bookmark;
   final VoidCallback? onTap;
   final bool isDeleteMode;
+  final bool isGridMode;
 
   const BookmarkCard({
-    super.key,
+    Key? key,
     required this.bookmark,
     this.isDeleteMode = false,
     this.onTap,
-  });
+    this.isGridMode = true,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    return isGridMode ? _buildGridCard(context) : _buildListCard(context);
+  }
+
+  Widget _buildGridCard(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (onTap != null) {
-          onTap!();
-          return;
-        }
-      },
+      onTap: onTap,
       child: Container(
-        clipBehavior: Clip.hardEdge,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                if (bookmark.metadata?.image != null)
-                  _networkImage()
-                else
-                  _unknownImagae(),
-                if (!isDeleteMode) _moreIcon(context)
-              ],
+            // Image section
+            _buildImageSection(),
+
+            // Content section
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitle(),
+                  SizedBox(height: 4),
+                  _buildUrl(),
+                  SizedBox(height: 8),
+                  _buildDescription(),
+                  if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
+                    _buildTags(),
+                ],
+              ),
             ),
-            _cardTitle(),
-            if (bookmark.tags != null && bookmark.tags!.isNotEmpty) _tags(),
-            _description(bookmark.metadata?.description),
           ],
         ),
       ),
     );
   }
 
-  GestureDetector _moreIcon(BuildContext context) {
+  Widget _buildListCard(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (context) {
-            return BookmarkEditBottomSheet(
-              bookmark: bookmark,
-            );
-          },
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Align(
-          alignment: Alignment.topRight,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(100),
-              shape: BoxShape.circle,
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: Offset(0, 2),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: _buildThumbnail(),
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTitle(),
+                    SizedBox(height: 4),
+                    _buildUrl(),
+                    SizedBox(height: 4),
+                    _buildDescription(),
+                    if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildTags(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Actions
+            if (!isDeleteMode)
+              _buildActionButtons(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    return Stack(
+      children: [
+        _buildThumbnail(),
+        if (bookmark.isFavorite && !isDeleteMode)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                shape: BoxShape.circle,
+              ),
               child: Icon(
-                Icons.more_vert,
-                color: Colors.grey[700],
+                Icons.star,
+                color: Colors.amber,
+                size: 16,
               ),
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 
-  Padding _tags() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: bookmark.tags!
-              .map(
-                (tag) => Chip(
-                  label: Text(
-                    tag,
-                    style: TextStyle(
-                      fontSize: 12,
-                    ),
-                  ),
-                  backgroundColor: Colors.white,
-                ),
-              )
-              .toList(),
-        ),
-      ),
-    );
-  }
-
-  Padding _cardTitle() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
-      child: Text(
-        bookmark.title,
-        style: TextStyle(
-            fontSize: 16.0, fontWeight: FontWeight.bold, color: titleTextColor),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Container _unknownImagae() {
-    return Container(
-      color: Colors.grey[300],
-      height: 150,
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.image,
-        color: Colors.grey,
-      ),
-    );
-  }
-
-  Image _networkImage() {
-    return Image.network(
-      bookmark.metadata!.image!,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
-        color: Colors.grey[300],
-        alignment: Alignment.center,
-        height: 150,
-        child: const Icon(Icons.broken_image, color: Colors.grey),
-      ),
-    );
-  }
-
-  Widget _description(String? description) {
-    if (description == null) {
-      return SizedBox(height: 10);
-    } else {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10, top: 4, left: 8, right: 8),
-        child: Text(
-          bookmark.metadata!.description!,
-          style: TextStyle(
-            fontSize: 14.0,
-            color: descriptionTextColor,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+  Widget _buildThumbnail() {
+    if (bookmark.metadata?.image != null) {
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Image.network(
+          bookmark.metadata!.image!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildPlaceholder(showLoader: true);
+          },
         ),
       );
+    } else {
+      return _buildPlaceholder();
     }
+  }
+
+  Widget _buildPlaceholder({bool showLoader = false}) {
+    return Container(
+      color: Colors.grey[200],
+      child: Center(
+        child: showLoader
+            ? CircularProgressIndicator(strokeWidth: 2)
+            : Icon(Icons.image, color: Colors.grey, size: 32),
+      ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return Text(
+      bookmark.title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: titleTextColor,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildUrl() {
+    return Text(
+      bookmark.url,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.blue[700],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildDescription() {
+    if (bookmark.description.isEmpty) {
+      return SizedBox();
+    }
+
+    return Text(
+      bookmark.description,
+      style: TextStyle(
+        fontSize: 14,
+        color: descriptionTextColor,
+      ),
+      maxLines: isGridMode ? 2 : 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildTags() {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: bookmark.tags!.map((tag) => _buildTagChip(tag)).toList(),
+    );
+  }
+
+  Widget _buildTagChip(String tag) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        tag,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[800],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // Edit button
+        IconButton(
+          icon: Icon(Icons.edit, color: Colors.grey[700]),
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) {
+                return BookmarkEditBottomSheet(
+                  bookmark: bookmark,
+                );
+              },
+            );
+          },
+          tooltip: "Edit bookmark",
+        ),
+      ],
+    );
   }
 }
