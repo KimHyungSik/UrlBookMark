@@ -14,51 +14,98 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
   static const String _storageKey = 'UrlBookmarks';
 
   Future<void> loadUrlBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? storedData = prefs.getString(_storageKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? storedData = prefs.getString(_storageKey);
 
-    if (storedData != null) {
-      final List<dynamic> jsonList = json.decode(storedData);
-      state = jsonList.map((item) => UrlBookmark.fromJson(item)).toList();
+      if (storedData != null) {
+        final List<dynamic> jsonList = json.decode(storedData);
+        state = jsonList.map((item) => UrlBookmark.fromJson(item)).toList();
+      }
+    } catch (e) {
+      print('Error loading bookmarks: $e');
+      // Fallback to empty state if loading fails
+      state = [];
     }
   }
 
   Future<void> addUrlBookmark(UrlBookmark bookmark) async {
-    final metadata = await bookmark.url.fetchUrlMetadata();
-    final bookmarkWithMetadata = bookmark.copyWith(metadata: metadata);
-    final updatedBookmarks = [bookmarkWithMetadata, ...state];
-    state = updatedBookmarks;
-    await _saveUrlBookmarks(updatedBookmarks);
+    try {
+      final metadata = await bookmark.url.fetchUrlMetadata();
+      final bookmarkWithMetadata = bookmark.copyWith(metadata: metadata);
+      final updatedBookmarks = [bookmarkWithMetadata, ...state];
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    } catch (e) {
+      print('Error adding bookmark: $e');
+      // Add without metadata if fetching fails
+      final updatedBookmarks = [bookmark, ...state];
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    }
   }
 
   Future<void> updateUrlBookmark(String id, UrlBookmark updatedBookmark) async {
-    final updatedBookmarks = [
-      for (final bookmark in state)
-        if (bookmark.id == id) updatedBookmark else bookmark,
-    ];
-    state = updatedBookmarks;
-    await _saveUrlBookmarks(updatedBookmarks);
+    try {
+      final updatedBookmarks = [
+        for (final bookmark in state)
+          if (bookmark.id == id) updatedBookmark else bookmark,
+      ];
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    } catch (e) {
+      print('Error updating bookmark: $e');
+    }
   }
 
   Future<void> deleteUrlBookmark(String id) async {
-    final updatedBookmarks = state.where((bookmark) => bookmark.id != id).toList();
-    state = updatedBookmarks;
-    await _saveUrlBookmarks(updatedBookmarks);
+    try {
+      final updatedBookmarks = state.where((bookmark) => bookmark.id != id).toList();
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    } catch (e) {
+      print('Error deleting bookmark: $e');
+    }
   }
 
   Future<void> deleteUrlBookmarks(List<String> ids) async {
-    final updatedBookmarks = state.where((bookmark) => !ids.contains(bookmark.id)).toList();
-    state = updatedBookmarks;
-    await _saveUrlBookmarks(updatedBookmarks);
+    try {
+      final updatedBookmarks = state.where((bookmark) => !ids.contains(bookmark.id)).toList();
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    } catch (e) {
+      print('Error deleting bookmarks: $e');
+    }
+  }
+
+  Future<void> toggleFavorite(String id) async {
+    try {
+      final updatedBookmarks = state.map((bookmark) {
+        if (bookmark.id == id) {
+          return bookmark.copyWith(isFavorite: !bookmark.isFavorite);
+        }
+        return bookmark;
+      }).toList();
+
+      state = updatedBookmarks;
+      await _saveUrlBookmarks(updatedBookmarks);
+    } catch (e) {
+      print('Error toggling favorite: $e');
+    }
   }
 
   Future<void> _saveUrlBookmarks(List<UrlBookmark> bookmarks) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonData = json.encode(bookmarks.map((b) => b.toJson()).toList());
-    await prefs.setString(_storageKey, jsonData);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String jsonData = json.encode(bookmarks.map((b) => b.toJson()).toList());
+      await prefs.setString(_storageKey, jsonData);
+    } catch (e) {
+      print('Error saving bookmarks: $e');
+    }
   }
 }
 
+// Keep the original provider
 final urlBookmarkProvider = StateNotifierProvider<UrlBookmarkManager, List<UrlBookmark>>(
       (ref) => UrlBookmarkManager(),
 );
