@@ -21,7 +21,8 @@ class BookmarkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return isGridMode ? _buildGridCard(context) : _buildListCard(context);
+    return SafeArea(
+        child: isGridMode ? _buildGridCard(context) : _buildListCard(context));
   }
 
   Widget _buildGridCard(BuildContext context) {
@@ -123,8 +124,7 @@ class BookmarkCard extends StatelessWidget {
             ),
 
             // Actions
-            if (!isDeleteMode)
-              _buildActionButtons(context),
+            if (!isDeleteMode) _buildActionButtons(context),
           ],
         ),
       ),
@@ -163,7 +163,8 @@ class BookmarkCard extends StatelessWidget {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => BookmarkEditBottomSheet(bookmark: bookmark),
+                  builder: (context) =>
+                      BookmarkEditBottomSheet(bookmark: bookmark),
                 );
               },
               child: Container(
@@ -304,22 +305,6 @@ class BookmarkCard extends StatelessWidget {
             );
           },
           tooltip: "Edit bookmark",
-        ),
-
-        // Visit link button
-        IconButton(
-          icon: Icon(Icons.open_in_new, color: Colors.blue[700]),
-          onPressed: () async {
-            try {
-              final url = Uri.parse(bookmark.url);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              }
-            } catch (e) {
-              print('Failed to launch URL: $e');
-            }
-          },
-          tooltip: "Open in browser",
         ),
       ],
     );

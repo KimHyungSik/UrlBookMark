@@ -7,13 +7,13 @@ import '../../common/tags.dart';
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
 
-// URL metadata provider
+// URL 메타데이터 Provider
 final urlMetadataProvider =
-StateNotifierProvider<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
+    StateNotifierProvider<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
   return UrlMetadataNotifier();
 });
 
-// URL metadata state management
+// URL 메타데이터 상태 관리
 class UrlMetadataNotifier extends StateNotifier<AsyncValue<UrlMetadata?>> {
   UrlMetadataNotifier() : super(const AsyncValue.data(null));
 
@@ -50,9 +50,9 @@ class _AddBookmarkBottomSheetState
   final _tagController = TextEditingController();
   Timer? _debounceTimer;
   List<String> _tags = [];
-  String? _customFolder;
   bool _isFavorite = false;
   bool _isProcessing = false;
+  bool _showAdditionalFields = false;
 
   @override
   void dispose() {
@@ -64,7 +64,7 @@ class _AddBookmarkBottomSheetState
     super.dispose();
   }
 
-  /// Bookmark adding process
+  /// 북마크 추가 처리
   Future<void> _addBookmark() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -75,7 +75,7 @@ class _AddBookmarkBottomSheetState
         final String url = _prepareUrl(_urlController.text.trim());
         final metadata = ref.read(urlMetadataProvider).value;
 
-        // Handle title and description values
+        // 제목과 설명 값 처리
         String? customTitle;
         if (_titleController.text.isNotEmpty) {
           customTitle = _titleController.text;
@@ -92,25 +92,26 @@ class _AddBookmarkBottomSheetState
           customTitle: customTitle,
           customDescription: customDescription,
           tags: _tags.isEmpty ? generateTags(url) : _tags,
-          folder: _customFolder,
           isFavorite: _isFavorite,
           metadata: metadata,
         );
 
-        // Add bookmark via provider
-        await ref.read(urlBookmarkProvider.notifier).addUrlBookmark(newBookmark);
-        ref.read(urlMetadataProvider.notifier).reset(); // Reset state
+        // Provider를 통해 북마크 추가
+        await ref
+            .read(urlBookmarkProvider.notifier)
+            .addUrlBookmark(newBookmark);
+        ref.read(urlMetadataProvider.notifier).reset(); // 상태 초기화
 
         if (mounted) {
-          Navigator.of(context).pop(); // Close the bottom sheet
+          Navigator.of(context).pop(); // 바텀시트 닫기
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Bookmark added successfully")),
+            SnackBar(content: Text("북마크가 추가되었습니다")),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Failed to add bookmark: ${e.toString()}")),
+            SnackBar(content: Text("북마크 추가 실패: ${e.toString()}")),
           );
           setState(() {
             _isProcessing = false;
@@ -128,7 +129,7 @@ class _AddBookmarkBottomSheetState
     return url;
   }
 
-  /// URL change handler with debouncing
+  /// URL 입력 처리 (디바운싱 적용)
   void _onUrlChanged(String url) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 800), () {
@@ -136,18 +137,25 @@ class _AddBookmarkBottomSheetState
         final preparedUrl = _prepareUrl(url.trim());
         ref.read(urlMetadataProvider.notifier).fetchMetadata(preparedUrl);
 
-        // Auto-generate tags
+        // 자동 태그 생성
         final autoTags = generateTags(preparedUrl);
         if (autoTags.isNotEmpty && _tags.isEmpty) {
           setState(() {
             _tags = autoTags;
           });
         }
+
+        // 추가 필드 표시
+        if (!_showAdditionalFields) {
+          setState(() {
+            _showAdditionalFields = true;
+          });
+        }
       }
     });
   }
 
-  /// Add a tag
+  /// 태그 추가
   void _addTag(String tag) {
     if (tag.isNotEmpty && !_tags.contains(tag)) {
       setState(() {
@@ -157,7 +165,7 @@ class _AddBookmarkBottomSheetState
     }
   }
 
-  /// Remove a tag
+  /// 태그 제거
   void _removeTag(String tag) {
     setState(() {
       _tags.remove(tag);
@@ -167,6 +175,7 @@ class _AddBookmarkBottomSheetState
   @override
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
+    final hasMetadata = metadataState.value != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -195,19 +204,25 @@ class _AddBookmarkBottomSheetState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildMetadataPreview(metadataState),
+                      // 메타데이터 프리뷰는 데이터가 있거나 로딩 중일 때만 표시
+                      if (metadataState.isLoading || hasMetadata)
+                        _buildMetadataPreview(metadataState),
+
                       SizedBox(height: 16),
                       _buildUrlField(),
-                      SizedBox(height: 12),
-                      _buildTitleField(),
-                      SizedBox(height: 12),
-                      _buildDescriptionField(),
-                      SizedBox(height: 16),
-                      _buildTagsSection(),
-                      SizedBox(height: 16),
-                      _buildFolderSelection(),
-                      SizedBox(height: 16),
-                      _buildFavoriteToggle(),
+
+                      // 추가 필드는 URL이 입력되었거나 메타데이터가 있을 때만 표시
+                      if (_showAdditionalFields || hasMetadata) ...[
+                        SizedBox(height: 16),
+                        _buildTitleField(),
+                        SizedBox(height: 16),
+                        _buildDescriptionField(),
+                        SizedBox(height: 16),
+                        _buildTagsSection(),
+                        SizedBox(height: 16),
+                        _buildFavoriteToggle(),
+                      ],
+
                       SizedBox(height: 24),
                     ],
                   ),
@@ -242,7 +257,7 @@ class _AddBookmarkBottomSheetState
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Add Bookmark',
+            '북마크 추가',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           IconButton(
@@ -270,11 +285,11 @@ class _AddBookmarkBottomSheetState
       onChanged: _onUrlChanged,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return "Please enter a URL";
+          return "URL을 입력해주세요";
         }
-        // Simple URL validation
+        // 간단한 URL 검증
         if (!value.contains('.')) {
-          return "Please enter a valid URL";
+          return "유효한 URL을 입력해주세요";
         }
         return null;
       },
@@ -285,8 +300,8 @@ class _AddBookmarkBottomSheetState
     return TextFormField(
       controller: _titleController,
       decoration: InputDecoration(
-        labelText: 'Title (Optional)',
-        hintText: 'Custom title for the bookmark',
+        labelText: '제목 (선택사항)',
+        hintText: '북마크의 제목을 입력하세요',
         prefixIcon: Icon(Icons.title),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -300,8 +315,8 @@ class _AddBookmarkBottomSheetState
     return TextFormField(
       controller: _descriptionController,
       decoration: InputDecoration(
-        labelText: 'Description (Optional)',
-        hintText: 'Add custom description',
+        labelText: '설명 (선택사항)',
+        hintText: '북마크에 대한 설명을 추가하세요',
         prefixIcon: Icon(Icons.description),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -315,15 +330,17 @@ class _AddBookmarkBottomSheetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Tags", style: TextStyle(fontWeight: FontWeight.bold)),
+        Text("태그", style: TextStyle(fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: _tags.map((tag) => Chip(
-            label: Text(tag),
-            deleteIcon: Icon(Icons.close, size: 18),
-            onDeleted: () => _removeTag(tag),
-          )).toList(),
+          children: _tags
+              .map((tag) => Chip(
+                    label: Text(tag),
+                    deleteIcon: Icon(Icons.close, size: 18),
+                    onDeleted: () => _removeTag(tag),
+                  ))
+              .toList(),
         ),
         Row(
           children: [
@@ -331,7 +348,7 @@ class _AddBookmarkBottomSheetState
               child: TextFormField(
                 controller: _tagController,
                 decoration: InputDecoration(
-                  hintText: 'Add a tag',
+                  hintText: '태그 추가',
                   prefixIcon: Icon(Icons.tag),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -357,40 +374,9 @@ class _AddBookmarkBottomSheetState
     );
   }
 
-  Widget _buildFolderSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Folder (Optional)", style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: Icon(Icons.folder),
-          ),
-          hint: Text("Select a folder"),
-          value: _customFolder,
-          items: ["Work", "Personal", "Shopping", "Reading", "Recipes"]
-              .map((folder) => DropdownMenuItem(
-            value: folder,
-            child: Text(folder),
-          ))
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _customFolder = value;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildFavoriteToggle() {
     return SwitchListTile(
-      title: Text("Add to Favorites"),
+      title: Text("즐겨찾기에 추가"),
       secondary: Icon(
         _isFavorite ? Icons.star : Icons.star_border,
         color: _isFavorite ? Colors.amber : null,
@@ -430,14 +416,14 @@ class _AddBookmarkBottomSheetState
         ),
         child: _isProcessing
             ? SizedBox(
-          height: 20,
-          width: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
-            : Text("Add Bookmark", style: TextStyle(fontSize: 16)),
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text("북마크 추가", style: TextStyle(fontSize: 16)),
       ),
     );
   }
@@ -447,12 +433,13 @@ class _AddBookmarkBottomSheetState
       data: (metadata) {
         if (metadata == null) return SizedBox.shrink();
 
-        // Auto-fill the title and description if they're empty
+        // 제목과 설명이 비어있으면 메타데이터로 자동 채우기
         if (_titleController.text.isEmpty && metadata.title != null) {
           _titleController.text = metadata.title!;
         }
 
-        if (_descriptionController.text.isEmpty && metadata.description != null) {
+        if (_descriptionController.text.isEmpty &&
+            metadata.description != null) {
           _descriptionController.text = metadata.description!;
         }
 
@@ -479,16 +466,18 @@ class _AddBookmarkBottomSheetState
                         height: 180,
                         width: double.infinity,
                         color: Colors.grey[200],
-                        child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                        child: Icon(Icons.broken_image,
+                            color: Colors.grey, size: 48),
                       ),
                     ),
                   ),
                 SizedBox(height: 12),
                 Text(
-                  metadata.title ?? "No Title",
+                  metadata.title ?? "제목 없음",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                if (metadata.description != null && metadata.description!.isNotEmpty)
+                if (metadata.description != null &&
+                    metadata.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
@@ -508,7 +497,7 @@ class _AddBookmarkBottomSheetState
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text("Loading website information..."),
+              Text("웹사이트 정보를 가져오는 중..."),
             ],
           ),
         ),
@@ -526,12 +515,12 @@ class _AddBookmarkBottomSheetState
               Icon(Icons.error_outline, color: Colors.red, size: 48),
               SizedBox(height: 16),
               Text(
-                "Failed to load website information",
+                "웹사이트 정보를 가져오지 못했습니다",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
               Text(
-                "The bookmark will be saved with basic information only.",
+                "기본 정보만으로 북마크가 저장됩니다.",
                 textAlign: TextAlign.center,
               ),
             ],
