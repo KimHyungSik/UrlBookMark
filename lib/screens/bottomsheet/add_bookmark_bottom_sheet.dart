@@ -6,10 +6,11 @@ import '../../bookmark_manager.dart';
 import '../../common/tags.dart';
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
+import '../web_search_screen.dart';
 
 // URL 메타데이터 Provider
 final urlMetadataProvider =
-    StateNotifierProvider<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
+StateNotifierProvider<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
   return UrlMetadataNotifier();
 });
 
@@ -97,9 +98,7 @@ class _AddBookmarkBottomSheetState
         );
 
         // Provider를 통해 북마크 추가
-        await ref
-            .read(urlBookmarkProvider.notifier)
-            .addUrlBookmark(newBookmark);
+        await ref.read(urlBookmarkProvider.notifier).addUrlBookmark(newBookmark);
         ref.read(urlMetadataProvider.notifier).reset(); // 상태 초기화
 
         if (mounted) {
@@ -172,6 +171,15 @@ class _AddBookmarkBottomSheetState
     });
   }
 
+  /// WebView 검색 화면 열기
+  void _openWebSearchScreen() {
+    Navigator.of(context).pop(); // 현재 바텀시트 닫기
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => WebSearchScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
@@ -196,6 +204,7 @@ class _AddBookmarkBottomSheetState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
+            _buildMethodSelectionTab(),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -269,6 +278,57 @@ class _AddBookmarkBottomSheetState
     );
   }
 
+  // 사용자에게 직접 URL 입력 또는 웹 검색 중 선택할 수 있는 탭
+  Widget _buildMethodSelectionTab() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[300]!, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.link),
+              label: Text('URL 직접 입력'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: null, // 현재 화면이므로 비활성화
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.search),
+              label: Text('웹 검색으로 추가'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[800],
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _openWebSearchScreen,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUrlField() {
     return TextFormField(
       controller: _urlController,
@@ -334,13 +394,11 @@ class _AddBookmarkBottomSheetState
         SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: _tags
-              .map((tag) => Chip(
-                    label: Text(tag),
-                    deleteIcon: Icon(Icons.close, size: 18),
-                    onDeleted: () => _removeTag(tag),
-                  ))
-              .toList(),
+          children: _tags.map((tag) => Chip(
+            label: Text(tag),
+            deleteIcon: Icon(Icons.close, size: 18),
+            onDeleted: () => _removeTag(tag),
+          )).toList(),
         ),
         Row(
           children: [
@@ -416,13 +474,13 @@ class _AddBookmarkBottomSheetState
         ),
         child: _isProcessing
             ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : Text("북마크 추가", style: TextStyle(fontSize: 16)),
       ),
     );
@@ -438,8 +496,7 @@ class _AddBookmarkBottomSheetState
           _titleController.text = metadata.title!;
         }
 
-        if (_descriptionController.text.isEmpty &&
-            metadata.description != null) {
+        if (_descriptionController.text.isEmpty && metadata.description != null) {
           _descriptionController.text = metadata.description!;
         }
 
@@ -466,8 +523,7 @@ class _AddBookmarkBottomSheetState
                         height: 180,
                         width: double.infinity,
                         color: Colors.grey[200],
-                        child: Icon(Icons.broken_image,
-                            color: Colors.grey, size: 48),
+                        child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
                       ),
                     ),
                   ),
@@ -476,8 +532,7 @@ class _AddBookmarkBottomSheetState
                   metadata.title ?? "제목 없음",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                if (metadata.description != null &&
-                    metadata.description!.isNotEmpty)
+                if (metadata.description != null && metadata.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
