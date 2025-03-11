@@ -44,6 +44,7 @@ dependencies:
   url_launcher: ^6.3.1
   shimmer: ^3.0.0
   webview_flutter: ^4.10.0
+  webview_flutter_wkwebview: ^3.18.4
 
 dev_dependencies:
   flutter_test:

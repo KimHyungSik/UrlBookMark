@@ -31,11 +31,13 @@ class _WebSearchScreenState extends ConsumerState<WebSearchScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
+            print("LOGEE  onPageStarted URL: $url");
             setState(() {
               _isLoading = true;
             });
           },
           onPageFinished: (String url) {
+            print("LOGEE  onPageFinished URL: $url");
             setState(() {
               _isLoading = false;
               _currentUrl = url;

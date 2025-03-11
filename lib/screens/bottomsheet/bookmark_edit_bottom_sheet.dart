@@ -26,9 +26,9 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
   Timer? _debounceTimer;
   List<String> _tags = [];
   bool _isFavorite = false;
-  String? _folder;
   bool _isLoading = false;
   bool _isUrlChanged = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -39,7 +39,6 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
     _tagController = TextEditingController();
     _tags = widget.bookmark.tags ?? [];
     _isFavorite = widget.bookmark.isFavorite;
-    _folder = widget.bookmark.folder;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(bookmarkProvider.notifier).state = widget.bookmark;
@@ -58,6 +57,8 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * 0.8; // 화면 높이의 80%로 제한
     final bookmarkState = ref.watch(bookmarkProvider);
 
     return Container(
@@ -68,41 +69,37 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
           topRight: Radius.circular(20),
         ),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+      constraints: BoxConstraints(
+        maxHeight: maxHeight,
       ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildPreviewImage(bookmarkState?.metadata?.image),
-                    SizedBox(height: 16),
-                    _buildUrlField(),
-                    SizedBox(height: 16),
-                    _buildTitleField(),
-                    SizedBox(height: 16),
-                    _buildDescriptionField(),
-                    SizedBox(height: 24),
-                    _buildTagsSection(),
-                    SizedBox(height: 24),
-                    _buildFolderSelection(),
-                    SizedBox(height: 16),
-                    _buildFavoriteToggle(),
-                    SizedBox(height: 40),
-                  ],
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildHeader(),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPreviewImage(bookmarkState?.metadata?.image),
+                  SizedBox(height: 16),
+                  _buildUrlField(),
+                  SizedBox(height: 16),
+                  _buildTitleField(),
+                  SizedBox(height: 16),
+                  _buildDescriptionField(),
+                  SizedBox(height: 16),
+                  _buildTagsSection(),
+                  SizedBox(height: 16),
+                  _buildFavoriteToggle(),
+                  SizedBox(height: 24),
+                ],
               ),
             ),
-            _buildActionButtons(),
-          ],
-        ),
+          ),
+          _buildActionButtons(),
+        ],
       ),
     );
   }
@@ -143,7 +140,7 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
   Widget _buildPreviewImage(String? imageUrl) {
     return Container(
       width: double.infinity,
-      height: 200,
+      height: 160, // 이미지 높이 축소
       decoration: BoxDecoration(
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(12),
@@ -214,7 +211,7 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      maxLines: 3,
+      maxLines: 2,
       onChanged: (value) {
         ref.read(bookmarkProvider.notifier).state = ref
             .read(bookmarkProvider.notifier)
@@ -261,59 +258,18 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
               ),
             ),
             SizedBox(width: 8),
-            ElevatedButton(
+            IconButton(
+              icon: Icon(Icons.add),
               onPressed: () => _addTag(_tagController.text),
-              child: Icon(Icons.add),
-              style: ElevatedButton.styleFrom(
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.grey[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: EdgeInsets.all(16),
-                backgroundColor: Colors.blue,
+                padding: EdgeInsets.all(12),
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFolderSelection() {
-    const List<String> folders = ["Work", "Personal", "Shopping", "Reading", "Recipes"];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("폴더", style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
-        DropdownButtonFormField<String?>(
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: Icon(Icons.folder),
-          ),
-          value: _folder,
-          hint: Text("폴더 선택 (선택사항)"),
-          items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text("폴더 없음"),
-            ),
-            ...folders.map((folder) => DropdownMenuItem(
-              value: folder,
-              child: Text(folder),
-            )).toList(),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _folder = value;
-            });
-            ref.read(bookmarkProvider.notifier).state = ref
-                .read(bookmarkProvider.notifier)
-                .state
-                ?.copyWith(folder: value);
-          },
         ),
       ],
     );
@@ -356,36 +312,11 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () {
-                // 북마크 삭제 확인 대화상자
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text("북마크 삭제"),
-                    content: Text("이 북마크를 삭제하시겠습니까?"),
-                    actions: [
-                      TextButton(
-                        child: Text("취소"),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      TextButton(
-                        child: Text("삭제", style: TextStyle(color: Colors.red)),
-                        onPressed: () {
-                          ref.read(urlBookmarkProvider.notifier)
-                              .deleteUrlBookmark(widget.bookmark.id);
-                          Navigator.of(context).pop(); // 대화상자 닫기
-                          Navigator.of(context).pop(); // 바텀시트 닫기
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("북마크가 삭제되었습니다")),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                );
+              onPressed: _isSaving ? null : () {
+                _showDeleteConfirmation();
               },
               style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 12),
                 side: BorderSide(color: Colors.red),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -398,15 +329,24 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: _saveChanges,
+              onPressed: _isSaving ? null : _saveChanges,
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 12),
                 backgroundColor: Colors.blue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text("저장", style: TextStyle(color: Colors.white)),
+              child: _isSaving
+                  ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+                  : Text("저장", style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -415,6 +355,7 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
   }
 
   void _addTag(String tag) {
+    tag = tag.trim();
     if (tag.isNotEmpty && !_tags.contains(tag)) {
       setState(() {
         _tags.add(tag);
@@ -468,26 +409,75 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
     );
   }
 
-  void _saveChanges() async {
-    // 현재 상태의 북마크 가져오기
-    final updatedBookmark = ref.read(bookmarkProvider.notifier).state;
+  Future<void> _saveChanges() async {
+    setState(() {
+      _isSaving = true;
+    });
 
-    if (updatedBookmark != null) {
-      // URL이 변경된 경우 최종 상태 업데이트
-      if (_isUrlChanged) {
-        updatedBookmark.copyWith(url: _urlController.text.trim());
+    try {
+      // 현재 상태의 북마크 가져오기
+      final updatedBookmark = ref.read(bookmarkProvider.notifier).state;
+
+      if (updatedBookmark != null) {
+        // URL이 변경된 경우 최종 상태 업데이트
+        if (_isUrlChanged) {
+          updatedBookmark.copyWith(url: _urlController.text.trim());
+        }
+
+        // 북마크 업데이트
+        await ref.read(urlBookmarkProvider.notifier)
+            .updateUrlBookmark(widget.bookmark.id, updatedBookmark);
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("북마크가 업데이트되었습니다")),
+          );
+        }
       }
-
-      // 북마크 업데이트
-      await ref.read(urlBookmarkProvider.notifier)
-          .updateUrlBookmark(widget.bookmark.id, updatedBookmark);
-
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("북마크 업데이트 실패: ${e.toString()}")),
+      );
+    } finally {
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("북마크가 업데이트되었습니다")),
-        );
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("북마크 삭제"),
+        content: Text("이 북마크를 삭제하시겠습니까?"),
+        actions: [
+          TextButton(
+            child: Text("취소"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text("삭제", style: TextStyle(color: Colors.red)),
+            onPressed: () async {
+              Navigator.of(context).pop(); // 대화상자 닫기
+
+              // 북마크 삭제
+              await ref.read(urlBookmarkProvider.notifier)
+                  .deleteUrlBookmark(widget.bookmark.id);
+
+              if (mounted) {
+                Navigator.of(context).pop(); // 바텀시트 닫기
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("북마크가 삭제되었습니다")),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

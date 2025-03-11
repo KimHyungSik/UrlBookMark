@@ -204,7 +204,6 @@ class _AddBookmarkBottomSheetState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
-            _buildMethodSelectionTab(),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -272,57 +271,6 @@ class _AddBookmarkBottomSheetState
           IconButton(
             icon: Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 사용자에게 직접 URL 입력 또는 웹 검색 중 선택할 수 있는 탭
-  Widget _buildMethodSelectionTab() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[300]!, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: Icon(Icons.link),
-              label: Text('URL 직접 입력'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: null, // 현재 화면이므로 비활성화
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: Icon(Icons.search),
-              label: Text('웹 검색으로 추가'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: _openWebSearchScreen,
-            ),
           ),
         ],
       ),
