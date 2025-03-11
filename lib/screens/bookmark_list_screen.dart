@@ -8,80 +8,9 @@ import '../bookmark_manager.dart';
 import '../common/pressable_button.dart';
 import '../model/url_marker.dart';
 import '../widget/bookmark_card.dart';
+import 'bookmark_list_screen_view_model.dart';
 import 'bottomsheet/add_bookmark_bottom_sheet.dart';
-import 'web_search_screen.dart';
-
-// 저장된 뷰 모드를 로드하는 Provider
-final viewModeProvider = StateNotifierProvider<ViewModeNotifier, bool>((ref) {
-  return ViewModeNotifier();
-});
-
-// 선택된 태그 Provider
-final selectedTagsProvider = StateProvider<Set<String>>((ref) => {});
-
-// 모든 사용 가능한 태그 Provider
-final availableTagsProvider = Provider<List<String>>((ref) {
-  final bookmarks = ref.watch(urlBookmarkProvider);
-  final Set<String> tags = {};
-
-  for (final bookmark in bookmarks) {
-    if (bookmark.tags != null) {
-      tags.addAll(bookmark.tags!);
-    }
-  }
-
-  return tags.toList()..sort();
-});
-
-// 태그로 필터링된 북마크 Provider
-final filteredBookmarksProvider = Provider<List<UrlBookmark>>((ref) {
-  final bookmarks = ref.watch(urlBookmarkProvider);
-  final selectedTags = ref.watch(selectedTagsProvider);
-
-  if (selectedTags.isEmpty) {
-    return bookmarks;
-  }
-
-  return bookmarks.where((bookmark) {
-    if (bookmark.tags == null) return false;
-
-    // 선택된 모든 태그가 북마크에 있는지 확인
-    return selectedTags.every((tag) => bookmark.tags!.contains(tag));
-  }).toList();
-});
-
-// 뷰 모드 상태 관리 (SharedPreferences로 저장 기능 포함)
-class ViewModeNotifier extends StateNotifier<bool> {
-  static const String _viewModeKey = 'view_mode_grid'; // true = grid, false = list
-
-  ViewModeNotifier() : super(true) {
-    _loadViewMode();
-  }
-
-  // 저장된 뷰 모드 로드
-  Future<void> _loadViewMode() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final isGridView = prefs.getBool(_viewModeKey) ?? true; // 기본값은 그리드 뷰
-      state = isGridView;
-    } catch (e) {
-      print('뷰 모드 로드 실패: $e');
-      // 오류 발생 시 기본값 사용 (그리드 뷰)
-      state = true;
-    }
-  }
-
-  // 뷰 모드 변경 및 저장
-  Future<void> toggleViewMode() async {
-    state = !state;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_viewModeKey, state);
-    } catch (e) {
-      print('뷰 모드 저장 실패: $e');
-    }
-  }
-}
+import 'bottomsheet/tag_search_bottom_sheet.dart'; // Import the new tag search sheet
 
 // Delete mode provider
 final isDeleteModeProvider = StateProvider<bool>((ref) => false);
@@ -94,27 +23,15 @@ class BookmarkListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filteredBookmarks = ref.watch(filteredBookmarksProvider);
+    final bookmarks = ref.watch(urlBookmarkProvider);
     final isDeleteMode = ref.watch(isDeleteModeProvider);
     final selectedBookmarks = ref.watch(selectedBookmarksProvider);
     final isGridView = ref.watch(viewModeProvider);
-    final selectedTags = ref.watch(selectedTagsProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: _buildAppBar(context, ref, isDeleteMode, selectedBookmarks, isGridView),
-      body: Column(
-        children: [
-          // 태그 필터 표시
-          if (selectedTags.isNotEmpty)
-            _buildTagFilterChips(context, ref, selectedTags),
-
-          // 북마크 목록
-          Expanded(
-            child: _buildBookmarkList(context, ref, filteredBookmarks, isDeleteMode, selectedBookmarks, isGridView),
-          ),
-        ],
-      ),
+      body: _buildBookmarkList(context, ref, bookmarks, isDeleteMode, selectedBookmarks, isGridView),
       floatingActionButton: !isDeleteMode ? _buildAddButton(context) : null,
     );
   }
@@ -143,12 +60,12 @@ class BookmarkListScreen extends ConsumerWidget {
       )
           : null,
       actions: [
-        // 태그 검색 버튼
+        // 태그 검색 버튼 (삭제 모드가 아닐 때만 표시)
         if (!isDeleteMode)
           IconButton(
             icon: Icon(Icons.tag, color: Colors.white),
-            onPressed: () => _showTagSearchDialog(context, ref),
-            tooltip: "태그로 검색",
+            onPressed: () => _showTagSearchSheet(context),
+            tooltip: "태그 검색",
           ),
 
         // 그리드/리스트 뷰 전환 버튼
@@ -183,58 +100,6 @@ class BookmarkListScreen extends ConsumerWidget {
     );
   }
 
-  // 태그 필터 표시
-  Widget _buildTagFilterChips(BuildContext context, WidgetRef ref, Set<String> selectedTags) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            offset: Offset(0, 2),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "필터링된 태그:",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
-                onPressed: () {
-                  ref.read(selectedTagsProvider.notifier).state = {};
-                },
-                child: Text("필터 초기화", style: TextStyle(color: Colors.blue[300])),
-              ),
-            ],
-          ),
-          SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: selectedTags.map((tag) => Chip(
-              label: Text(tag, style: TextStyle(color: Colors.white)),
-              backgroundColor: Colors.blue[700],
-              deleteIconColor: Colors.white,
-              onDeleted: () {
-                final updatedTags = Set<String>.from(selectedTags);
-                updatedTags.remove(tag);
-                ref.read(selectedTagsProvider.notifier).state = updatedTags;
-              },
-            )).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
   // 북마크 목록 표시 (그리드 또는 리스트)
   Widget _buildBookmarkList(
       BuildContext context,
@@ -246,13 +111,13 @@ class BookmarkListScreen extends ConsumerWidget {
       ) {
     // 북마크가 없는 경우 빈 상태 표시
     if (bookmarks.isEmpty) {
-      return _buildEmptyState(ref);
+      return _buildEmptyState(context);
     }
 
     // 그리드 뷰 표시
     if (isGridView) {
       return Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: MasonryGridView.count(
           crossAxisCount: 2,
           crossAxisSpacing: 12,
@@ -266,61 +131,16 @@ class BookmarkListScreen extends ConsumerWidget {
     }
     // 리스트 뷰 표시
     else {
-      return ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: bookmarks.length,
-        itemBuilder: (context, index) => _buildBookmarkItem(
-            context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
+      return Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: ListView.builder(
+          itemCount: bookmarks.length,
+          itemBuilder: (context, index) => _buildBookmarkItem(
+              context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
+          ),
         ),
       );
     }
-  }
-
-  // 북마크가 없을 때 표시할 빈 상태
-  Widget _buildEmptyState(WidgetRef ref) {
-    // 태그 필터가 적용되었을 때 다른 메시지 표시
-    final selectedTags = ref.watch(selectedTagsProvider);
-    final isTagFiltered = selectedTags.isNotEmpty;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isTagFiltered ? Icons.filter_list : Icons.bookmark_border,
-            size: 64,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            isTagFiltered ? "해당 태그의 북마크가 없습니다" : "북마크가 없습니다",
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          SizedBox(height: 8),
-          Text(
-            isTagFiltered
-                ? "다른 태그를 선택하거나 필터를 초기화하세요"
-                : "오른쪽 하단의 + 버튼을 눌러 북마크를 추가해보세요",
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          if (isTagFiltered)
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  ref.read(selectedTagsProvider.notifier).state = {};
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-                child: Text("태그 필터 초기화"),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   // 개별 북마크 아이템 구성
@@ -378,6 +198,69 @@ class BookmarkListScreen extends ConsumerWidget {
     );
   }
 
+  // 북마크가 없을 때 표시할 빈 상태 (개선된 버전)
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.bookmark_border,
+              size: 64,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 24),
+          Text(
+            "북마크가 없습니다",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              "오른쪽 하단의 + 버튼을 눌러 북마크를 추가해보세요",
+              style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: 32),
+          PressableButton(
+            height: 55,
+            width: 200,
+            onPressed: () => _showAddBookmarkSheet(context),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 24, color: Colors.black),
+                SizedBox(width: 8),
+                Text(
+                  "첫 북마크 추가하기",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 추가 버튼
   Widget _buildAddButton(BuildContext context) {
     return PressableButton(
@@ -385,118 +268,6 @@ class BookmarkListScreen extends ConsumerWidget {
       width: 58,
       onPressed: () => _showAddBookmarkSheet(context),
       child: Icon(Icons.add, size: 32, color: Colors.black),
-    );
-  }
-
-  // 북마크 추가 옵션 표시 (바텀시트 또는 웹 검색)
-  // FIXME :: WebView 이상
-  void _showAddOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.link),
-              title: Text('URL로 북마크 추가'),
-              onTap: () {
-                Navigator.pop(context);
-                _showAddBookmarkSheet(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.search),
-              title: Text('웹 검색으로 북마크 추가'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => WebSearchScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 태그 검색 다이얼로그
-  void _showTagSearchDialog(BuildContext context, WidgetRef ref) {
-    final availableTags = ref.read(availableTagsProvider);
-    final selectedTags = ref.read(selectedTagsProvider);
-
-    if (availableTags.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("사용 가능한 태그가 없습니다")),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text("태그로 검색"),
-              content: Container(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "북마크에 포함된 태그를 선택하세요",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: availableTags.map((tag) {
-                        final isSelected = selectedTags.contains(tag);
-                        return FilterChip(
-                          label: Text(tag),
-                          selected: isSelected,
-                          selectedColor: Colors.blue[100],
-                          onSelected: (selected) {
-                            final updatedTags = Set<String>.from(selectedTags);
-                            if (selected) {
-                              updatedTags.add(tag);
-                            } else {
-                              updatedTags.remove(tag);
-                            }
-                            ref.read(selectedTagsProvider.notifier).state = updatedTags;
-                            setState(() {}); // 다이얼로그 UI 갱신
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  child: Text("초기화"),
-                  onPressed: () {
-                    ref.read(selectedTagsProvider.notifier).state = {};
-                    setState(() {}); // 다이얼로그 UI 갱신
-                  },
-                ),
-                TextButton(
-                  child: Text("적용"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 
@@ -534,6 +305,16 @@ class BookmarkListScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const AddBookmarkBottomSheet(),
+    );
+  }
+
+  // 태그 검색 시트 표시 (새로 추가)
+  void _showTagSearchSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const TagSearchBottomSheet(),
     );
   }
 

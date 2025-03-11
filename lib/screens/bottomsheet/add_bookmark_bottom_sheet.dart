@@ -6,11 +6,9 @@ import '../../bookmark_manager.dart';
 import '../../common/tags.dart';
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
-import '../web_search_screen.dart';
 
-// URL 메타데이터 Provider
-final urlMetadataProvider =
-StateNotifierProvider<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
+// URL 메타데이터 Provider - 고유 ID를 사용하여 매번 리셋되도록 함
+final urlMetadataProvider = StateNotifierProvider.autoDispose<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
   return UrlMetadataNotifier();
 });
 
@@ -34,6 +32,16 @@ class UrlMetadataNotifier extends StateNotifier<AsyncValue<UrlMetadata?>> {
   }
 }
 
+// 바텀시트가 열릴 때마다 새로운 인스턴스를 생성하도록 함수 추가
+void showAddBookmarkSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => AddBookmarkBottomSheet(key: UniqueKey()),
+  );
+}
+
 class AddBookmarkBottomSheet extends ConsumerStatefulWidget {
   const AddBookmarkBottomSheet({Key? key}) : super(key: key);
 
@@ -45,10 +53,12 @@ class AddBookmarkBottomSheet extends ConsumerStatefulWidget {
 class _AddBookmarkBottomSheetState
     extends ConsumerState<AddBookmarkBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _urlController = TextEditingController();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _tagController = TextEditingController();
+  late final TextEditingController _urlController;
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _tagController;
+  late final FocusNode _urlFocusNode;
+
   Timer? _debounceTimer;
   List<String> _tags = [];
   bool _isFavorite = false;
@@ -56,12 +66,40 @@ class _AddBookmarkBottomSheetState
   bool _showAdditionalFields = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    // 모든 컨트롤러를 초기화
+    _urlController = TextEditingController();
+    _titleController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _tagController = TextEditingController();
+    _urlFocusNode = FocusNode();
+
+    // 변수 초기화
+    _tags = [];
+    _isFavorite = false;
+    _isProcessing = false;
+    _showAdditionalFields = false;
+
+    // 포커스를 URL 필드에 주기
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _urlFocusNode.requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
+    // 디바운스 타이머 해제
     _debounceTimer?.cancel();
+
+    // 컨트롤러 해제
     _urlController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _tagController.dispose();
+    _urlFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -98,23 +136,37 @@ class _AddBookmarkBottomSheetState
         );
 
         // Provider를 통해 북마크 추가
-        await ref.read(urlBookmarkProvider.notifier).addUrlBookmark(newBookmark);
-        ref.read(urlMetadataProvider.notifier).reset(); // 상태 초기화
+        await ref
+            .read(urlBookmarkProvider.notifier)
+            .addUrlBookmark(newBookmark);
 
         if (mounted) {
           Navigator.of(context).pop(); // 바텀시트 닫기
+          // 추가 성공 알림 표시
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("북마크가 추가되었습니다")),
+            SnackBar(
+              content: Text("북마크가 추가되었습니다"),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: "확인",
+                onPressed: () {},
+              ),
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("북마크 추가 실패: ${e.toString()}")),
-          );
           setState(() {
             _isProcessing = false;
           });
+          // 오류 발생 알림
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("북마크 추가 실패: ${e.toString()}"),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     }
@@ -156,9 +208,10 @@ class _AddBookmarkBottomSheetState
 
   /// 태그 추가
   void _addTag(String tag) {
-    if (tag.isNotEmpty && !_tags.contains(tag)) {
+    final trimmedTag = tag.trim();
+    if (trimmedTag.isNotEmpty && !_tags.contains(trimmedTag)) {
       setState(() {
-        _tags.add(tag);
+        _tags.add(trimmedTag);
         _tagController.clear();
       });
     }
@@ -169,15 +222,6 @@ class _AddBookmarkBottomSheetState
     setState(() {
       _tags.remove(tag);
     });
-  }
-
-  /// WebView 검색 화면 열기
-  void _openWebSearchScreen() {
-    Navigator.of(context).pop(); // 현재 바텀시트 닫기
-
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => WebSearchScreen()),
-    );
   }
 
   @override
@@ -280,6 +324,7 @@ class _AddBookmarkBottomSheetState
   Widget _buildUrlField() {
     return TextFormField(
       controller: _urlController,
+      focusNode: _urlFocusNode,
       decoration: InputDecoration(
         labelText: 'URL',
         hintText: 'https://example.com',
@@ -287,6 +332,18 @@ class _AddBookmarkBottomSheetState
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+        suffixIcon: _urlController.text.isNotEmpty
+            ? IconButton(
+          icon: Icon(Icons.clear),
+          onPressed: () {
+            _urlController.clear();
+            ref.read(urlMetadataProvider.notifier).reset();
+            setState(() {
+              _showAdditionalFields = false;
+            });
+          },
+        )
+            : null,
       ),
       keyboardType: TextInputType.url,
       textInputAction: TextInputAction.next,
@@ -295,10 +352,22 @@ class _AddBookmarkBottomSheetState
         if (value == null || value.isEmpty) {
           return "URL을 입력해주세요";
         }
+
         // 간단한 URL 검증
-        if (!value.contains('.')) {
-          return "유효한 URL을 입력해주세요";
+        String url = value;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = 'https://$url';
         }
+
+        try {
+          final uri = Uri.parse(url);
+          if (!uri.isAbsolute || !uri.host.contains('.')) {
+            return "유효한 URL을 입력해주세요";
+          }
+        } catch (e) {
+          return "유효한 URL 형식이 아닙니다";
+        }
+
         return null;
       },
     );
@@ -342,11 +411,14 @@ class _AddBookmarkBottomSheetState
         SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: _tags.map((tag) => Chip(
+          children: _tags
+              .map((tag) => Chip(
             label: Text(tag),
             deleteIcon: Icon(Icons.close, size: 18),
             onDeleted: () => _removeTag(tag),
-          )).toList(),
+            backgroundColor: Colors.grey[200],
+          ))
+              .toList(),
         ),
         Row(
           children: [
@@ -419,15 +491,23 @@ class _AddBookmarkBottomSheetState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          disabledBackgroundColor: Colors.grey,
         ),
         child: _isProcessing
-            ? SizedBox(
-          height: 20,
-          width: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
+            ? Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text("처리 중...", style: TextStyle(fontSize: 16)),
+          ],
         )
             : Text("북마크 추가", style: TextStyle(fontSize: 16)),
       ),
@@ -444,13 +524,14 @@ class _AddBookmarkBottomSheetState
           _titleController.text = metadata.title!;
         }
 
-        if (_descriptionController.text.isEmpty && metadata.description != null) {
+        if (_descriptionController.text.isEmpty &&
+            metadata.description != null) {
           _descriptionController.text = metadata.description!;
         }
 
         return Card(
           margin: EdgeInsets.symmetric(vertical: 10),
-          elevation: 2,
+          elevation: 3,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -462,16 +543,18 @@ class _AddBookmarkBottomSheetState
                 if (metadata.image != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      metadata.image!,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 180,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        metadata.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: Icon(Icons.broken_image,
+                              color: Colors.grey, size: 48),
+                        ),
                       ),
                     ),
                   ),
@@ -480,12 +563,46 @@ class _AddBookmarkBottomSheetState
                   metadata.title ?? "제목 없음",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                if (metadata.description != null && metadata.description!.isNotEmpty)
+                if (metadata.description != null &&
+                    metadata.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       metadata.description!,
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                if (metadata.favicon != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: Image.network(
+                            metadata.favicon!,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.link,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _urlController.text,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[700],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -493,41 +610,65 @@ class _AddBookmarkBottomSheetState
           ),
         );
       },
-      loading: () => Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text("웹사이트 정보를 가져오는 중..."),
-            ],
-          ),
+      loading: () => Container(
+        padding: const EdgeInsets.symmetric(vertical: 30),
+        child: Column(
+          children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "웹사이트 정보를 가져오는 중...",
+              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "잠시만 기다려주세요",
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            ),
+          ],
         ),
       ),
-      error: (error, stack) => Card(
+      error: (error, stack) => Container(
         margin: EdgeInsets.symmetric(vertical: 10),
-        color: Colors.red[50],
-        shape: RoundedRectangleBorder(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red[200]!),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 48),
-              SizedBox(height: 16),
-              Text(
-                "웹사이트 정보를 가져오지 못했습니다",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text(
-                "기본 정보만으로 북마크가 저장됩니다.",
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            SizedBox(height: 16),
+            Text(
+              "웹사이트 정보를 가져오지 못했습니다",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "기본 정보만으로 북마크가 저장됩니다.\n나중에 편집하여 정보를 추가할 수 있습니다.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            SizedBox(height: 12),
+            TextButton.icon(
+              icon: Icon(Icons.refresh),
+              label: Text("다시 시도"),
+              onPressed: () {
+                if (_urlController.text.isNotEmpty) {
+                  final preparedUrl = _prepareUrl(_urlController.text.trim());
+                  ref.read(urlMetadataProvider.notifier).fetchMetadata(preparedUrl);
+                }
+              },
+            ),
+          ],
         ),
       ),
     );
