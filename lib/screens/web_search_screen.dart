@@ -44,11 +44,7 @@ class _WebSearchScreenState extends ConsumerState<WebSearchScreen> {
               _urlController.text = url;
             });
           },
-          onWebResourceError: (WebResourceError error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('페이지 로드 중 오류가 발생했습니다: ${error.description}')),
-            );
-          },
+          onWebResourceError: (WebResourceError error) {},
         ),
       )
       ..loadRequest(Uri.parse(_currentUrl));
@@ -160,11 +156,6 @@ class _WebSearchScreenState extends ConsumerState<WebSearchScreen> {
 
     // 북마크 저장
     await ref.read(urlBookmarkProvider.notifier).addUrlBookmark(bookmark);
-
-    // 사용자에게 피드백 제공
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('북마크가 추가되었습니다: $title')),
-    );
 
     // 북마크 목록 화면으로 돌아가기
     Navigator.pop(context);

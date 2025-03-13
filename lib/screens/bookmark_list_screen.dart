@@ -545,10 +545,6 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       final uri = Uri.parse(url);
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      // URL 열기 실패 시 오류 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("URL을 열 수 없습니다: $url")),
-      );
     }
   }
 
@@ -583,11 +579,6 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               ref.read(selectedBookmarksProvider.notifier).state = {};
               ref.read(isDeleteModeProvider.notifier).state = false;
               Navigator.of(context).pop();
-
-              // 삭제 후 스낵바 표시
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("북마크가 삭제되었습니다")),
-              );
             },
           ),
         ],

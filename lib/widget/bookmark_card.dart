@@ -55,8 +55,6 @@ class BookmarkCard extends StatelessWidget {
                 children: [
                   _buildTitle(),
                   SizedBox(height: 4),
-                  _buildUrl(),
-                  SizedBox(height: 8),
                   _buildDescription(),
                   if (bookmark.tags != null && bookmark.tags!.isNotEmpty)
                     _buildTags(),
@@ -116,8 +114,6 @@ class BookmarkCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildTitle(),
-                          SizedBox(height: 4),
-                          _buildUrl(),
                           SizedBox(height: 4),
                           Flexible(child: _buildDescription()),
                           SizedBox(height: 4),
@@ -280,18 +276,6 @@ class BookmarkCard extends StatelessWidget {
     );
   }
 
-  Widget _buildUrl() {
-    return Text(
-      bookmark.url,
-      style: TextStyle(
-        fontSize: 12,
-        color: Colors.blue[700],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-
   Widget _buildDescription() {
     if (bookmark.description.isEmpty) {
       return SizedBox();
@@ -303,7 +287,7 @@ class BookmarkCard extends StatelessWidget {
         fontSize: 14,
         color: descriptionTextColor,
       ),
-      maxLines: isGridMode ? 2 : 1,
+      maxLines: isGridMode ? 3 : 2,
       overflow: TextOverflow.ellipsis,
     );
   }
