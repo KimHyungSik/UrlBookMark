@@ -8,6 +8,7 @@ import '../bookmark_manager.dart';
 import '../common/pressable_button.dart';
 import '../model/url_marker.dart';
 import '../widget/bookmark_card.dart';
+import '../widget/custom_dialog.dart';
 import 'bookmark_list_screen_view_model.dart';
 import 'bottomsheet/add_bookmark_bottom_sheet.dart';
 
@@ -558,31 +559,28 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
     );
   }
 
-  // 삭제 확인 대화상자
   void _showDeleteConfirmation(BuildContext context, Set<String> selectedBookmarks) {
-    showDialog(
+    showCustomConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("북마크 삭제"),
-        content: Text("선택한 ${selectedBookmarks.length}개의 북마크를 삭제하시겠습니까?"),
-        actions: [
-          TextButton(
-            child: Text("취소"),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: Text("삭제", style: TextStyle(color: Colors.red)),
-            onPressed: () {
-              ref
-                  .read(urlBookmarkProvider.notifier)
-                  .deleteUrlBookmarks(selectedBookmarks.toList());
-              ref.read(selectedBookmarksProvider.notifier).state = {};
-              ref.read(isDeleteModeProvider.notifier).state = false;
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      ),
-    );
+      title: "북마크 삭제",
+      message: "선택한 ${selectedBookmarks.length}개의 북마크를 삭제하시겠습니까?",
+      cancelText: "취소",
+      confirmText: "삭제",
+      isDestructive: true,
+      icon: Icons.delete_forever,
+    ).then((confirmed) {
+      if (confirmed == true) {
+        ref
+            .read(urlBookmarkProvider.notifier)
+            .deleteUrlBookmarks(selectedBookmarks.toList());
+        ref.read(selectedBookmarksProvider.notifier).state = {};
+        ref.read(isDeleteModeProvider.notifier).state = false;
+
+        // 삭제 후 스낵바 표시
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("북마크가 삭제되었습니다")),
+        );
+      }
+    });
   }
 }

@@ -8,7 +8,8 @@ import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
 
 // URL 메타데이터 Provider - 고유 ID를 사용하여 매번 리셋되도록 함
-final urlMetadataProvider = StateNotifierProvider.autoDispose<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
+final urlMetadataProvider = StateNotifierProvider.autoDispose<
+    UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
   return UrlMetadataNotifier();
 });
 
@@ -160,31 +161,12 @@ class _AddBookmarkBottomSheetState
 
         if (mounted) {
           Navigator.of(context).pop(); // 바텀시트 닫기
-          // 추가 성공 알림 표시
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("북마크가 추가되었습니다"),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: "확인",
-                onPressed: () {},
-              ),
-            ),
-          );
         }
       } catch (e) {
         if (mounted) {
           setState(() {
             _isProcessing = false;
           });
-          // 오류 발생 알림
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("북마크 추가 실패: ${e.toString()}"),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
         }
       }
     }
@@ -248,15 +230,18 @@ class _AddBookmarkBottomSheetState
     final hasMetadata = metadataState.value != null;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final isKeyboardVisible = keyboardHeight > 0;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    // 현재 컨텐츠 양에 따라 바텀시트의 초기 높이 결정
-    double initialHeight = _showAdditionalFields || hasMetadata
-        ? MediaQuery.of(context).size.height * 0.75  // 추가 필드가 있으면 75%
-        : MediaQuery.of(context).size.height * 0.5;  // 기본은 50%
+    // Set maximum height to 85% of screen height
+    final maxSheetHeight = screenHeight * 0.85;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
       child: Container(
+        // Set constraints for maximum height
+        constraints: BoxConstraints(
+          maxHeight: maxSheetHeight,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -357,15 +342,15 @@ class _AddBookmarkBottomSheetState
         ),
         suffixIcon: _urlController.text.isNotEmpty
             ? IconButton(
-          icon: Icon(Icons.clear),
-          onPressed: () {
-            _urlController.clear();
-            ref.read(urlMetadataProvider.notifier).reset();
-            setState(() {
-              _showAdditionalFields = false;
-            });
-          },
-        )
+                icon: Icon(Icons.clear),
+                onPressed: () {
+                  _urlController.clear();
+                  ref.read(urlMetadataProvider.notifier).reset();
+                  setState(() {
+                    _showAdditionalFields = false;
+                  });
+                },
+              )
             : null,
       ),
       keyboardType: TextInputType.url,
@@ -436,11 +421,11 @@ class _AddBookmarkBottomSheetState
           spacing: 8,
           children: _tags
               .map((tag) => Chip(
-            label: Text(tag),
-            deleteIcon: Icon(Icons.close, size: 18),
-            onDeleted: () => _removeTag(tag),
-            backgroundColor: Colors.grey[200],
-          ))
+                    label: Text(tag),
+                    deleteIcon: Icon(Icons.close, size: 18),
+                    onDeleted: () => _removeTag(tag),
+                    backgroundColor: Colors.grey[200],
+                  ))
               .toList(),
         ),
         Row(
@@ -492,6 +477,15 @@ class _AddBookmarkBottomSheetState
   }
 
   Widget _buildAddButton() {
+    final metadataState = ref.watch(urlMetadataProvider);
+    final isUrlEmpty = _urlController.text.trim().isEmpty;
+    final isMetadataLoading = metadataState.isLoading;
+    final formHasErrors = _formKey.currentState?.validate() == false;
+
+    // Check all conditions that would make the button disabled
+    final isButtonDisabled =
+        _isProcessing || isUrlEmpty || isMetadataLoading || formHasErrors;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -506,7 +500,7 @@ class _AddBookmarkBottomSheetState
         ],
       ),
       child: ElevatedButton(
-        onPressed: _isProcessing ? null : _addBookmark,
+        onPressed: isButtonDisabled ? null : _addBookmark,
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.symmetric(vertical: 16),
           backgroundColor: Colors.black,
@@ -518,21 +512,23 @@ class _AddBookmarkBottomSheetState
         ),
         child: _isProcessing
             ? Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            SizedBox(width: 12),
-            Text("처리 중...", style: TextStyle(fontSize: 16)),
-          ],
-        )
-            : Text("북마크 추가", style: TextStyle(fontSize: 16)),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text("처리 중...", style: TextStyle(fontSize: 16)),
+                ],
+              )
+            : isMetadataLoading
+                ? Text("URL 정보 가져오는 중...", style: TextStyle(fontSize: 16))
+                : Text("북마크 추가", style: TextStyle(fontSize: 16)),
       ),
     );
   }
@@ -687,7 +683,9 @@ class _AddBookmarkBottomSheetState
               onPressed: () {
                 if (_urlController.text.isNotEmpty) {
                   final preparedUrl = _prepareUrl(_urlController.text.trim());
-                  ref.read(urlMetadataProvider.notifier).fetchMetadata(preparedUrl);
+                  ref
+                      .read(urlMetadataProvider.notifier)
+                      .fetchMetadata(preparedUrl);
                 }
               },
             ),

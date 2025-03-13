@@ -6,6 +6,7 @@ import 'package:url_book_marker/bookmark_manager.dart';
 
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
+import '../../widget/custom_dialog.dart';
 
 final bookmarkProvider = StateProvider<UrlBookmark?>((ref) => null);
 
@@ -15,10 +16,12 @@ class BookmarkEditBottomSheet extends ConsumerStatefulWidget {
   BookmarkEditBottomSheet({Key? key, required this.bookmark}) : super(key: key);
 
   @override
-  ConsumerState<BookmarkEditBottomSheet> createState() => _BookmarkEditBottomSheetState();
+  ConsumerState<BookmarkEditBottomSheet> createState() =>
+      _BookmarkEditBottomSheetState();
 }
 
-class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomSheet> {
+class _BookmarkEditBottomSheetState
+    extends ConsumerState<BookmarkEditBottomSheet> {
   late TextEditingController _urlController;
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
@@ -35,7 +38,8 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
     super.initState();
     _urlController = TextEditingController(text: widget.bookmark.url);
     _titleController = TextEditingController(text: widget.bookmark.title);
-    _descriptionController = TextEditingController(text: widget.bookmark.description);
+    _descriptionController =
+        TextEditingController(text: widget.bookmark.description);
     _tagController = TextEditingController();
     _tags = widget.bookmark.tags ?? [];
     _isFavorite = widget.bookmark.isFavorite;
@@ -148,20 +152,20 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
       child: _isLoading
           ? Center(child: CircularProgressIndicator())
           : (imageUrl != null
-          ? ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Center(
-            child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
-          ),
-        ),
-      )
-          : Center(
-        child: Icon(Icons.image, size: 48, color: Colors.grey),
-      )
-      ),
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Icon(Icons.broken_image,
+                          size: 48, color: Colors.grey),
+                    ),
+                  ),
+                )
+              : Center(
+                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+                )),
     );
   }
 
@@ -230,16 +234,18 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _tags.map((tag) => Chip(
-            label: Text(tag),
-            deleteIcon: Icon(Icons.close, size: 16),
-            onDeleted: () {
-              setState(() {
-                _tags.remove(tag);
-              });
-              _updateTags();
-            },
-          )).toList(),
+          children: _tags
+              .map((tag) => Chip(
+                    label: Text(tag),
+                    deleteIcon: Icon(Icons.close, size: 16),
+                    onDeleted: () {
+                      setState(() {
+                        _tags.remove(tag);
+                      });
+                      _updateTags();
+                    },
+                  ))
+              .toList(),
         ),
         SizedBox(height: 8),
         Row(
@@ -312,9 +318,11 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: _isSaving ? null : () {
-                _showDeleteConfirmation();
-              },
+              onPressed: _isSaving
+                  ? null
+                  : () {
+                      _showDeleteConfirmation();
+                    },
               style: OutlinedButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 side: BorderSide(color: Colors.red),
@@ -339,13 +347,13 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
               ),
               child: _isSaving
                   ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : Text("저장", style: TextStyle(color: Colors.white)),
             ),
           ),
@@ -366,17 +374,15 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
   }
 
   void _updateTags() {
-    ref.read(bookmarkProvider.notifier).state = ref
-        .read(bookmarkProvider.notifier)
-        .state
-        ?.copyWith(tags: _tags);
+    ref.read(bookmarkProvider.notifier).state =
+        ref.read(bookmarkProvider.notifier).state?.copyWith(tags: _tags);
   }
 
   void _onUrlChanged(String url) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(
       const Duration(milliseconds: 800),
-          () async {
+      () async {
         if (url.isNotEmpty) {
           setState(() {
             _isLoading = true;
@@ -425,7 +431,8 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
         }
 
         // 북마크 업데이트
-        await ref.read(urlBookmarkProvider.notifier)
+        await ref
+            .read(urlBookmarkProvider.notifier)
             .updateUrlBookmark(widget.bookmark.id, updatedBookmark);
 
         if (mounted) {
@@ -442,35 +449,28 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
   }
 
   void _showDeleteConfirmation() {
-    showDialog(
+    showCustomConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("북마크 삭제"),
-        content: Text("이 북마크를 삭제하시겠습니까?"),
-        actions: [
-          TextButton(
-            child: Text("취소"),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          TextButton(
-            child: Text("삭제", style: TextStyle(color: Colors.red)),
-            onPressed: () async {
-              Navigator.of(context).pop(); // 대화상자 닫기
+      title: "북마크 삭제",
+      message: "이 북마크를 삭제하시겠습니까?",
+      cancelText: "취소",
+      confirmText: "삭제",
+      isDestructive: true,
+      icon: Icons.delete_forever,
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        // 북마크 삭제
+        await ref
+            .read(urlBookmarkProvider.notifier)
+            .deleteUrlBookmark(widget.bookmark.id);
 
-              // 북마크 삭제
-              await ref.read(urlBookmarkProvider.notifier)
-                  .deleteUrlBookmark(widget.bookmark.id);
-
-              if (mounted) {
-                Navigator.of(context).pop(); // 바텀시트 닫기
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("북마크가 삭제되었습니다")),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
+        if (mounted) {
+          Navigator.of(context).pop(); // 바텀시트 닫기
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("북마크가 삭제되었습니다")),
+          );
+        }
+      }
+    });
   }
 }
