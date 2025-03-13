@@ -430,15 +430,8 @@ class _BookmarkEditBottomSheetState extends ConsumerState<BookmarkEditBottomShee
 
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("북마크가 업데이트되었습니다")),
-          );
         }
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("북마크 업데이트 실패: ${e.toString()}")),
-      );
     } finally {
       if (mounted) {
         setState(() {

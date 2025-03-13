@@ -13,6 +13,16 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
 
   static const String _storageKey = 'UrlBookmarks';
 
+  // 즐겨찾기 순으로 정렬하는 도우미 함수
+  List<UrlBookmark> _sortByFavorites(List<UrlBookmark> bookmarks) {
+    // 즐겨찾기된 항목(isFavorite=true)을 먼저 정렬하고 그 다음에 일반 항목 정렬
+    final favoriteBookmarks = bookmarks.where((bookmark) => bookmark.isFavorite).toList();
+    final regularBookmarks = bookmarks.where((bookmark) => !bookmark.isFavorite).toList();
+
+    // 두 리스트를 합치기 (즐겨찾기가 앞에 오게 됨)
+    return [...favoriteBookmarks, ...regularBookmarks];
+  }
+
   Future<void> loadUrlBookmarks() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -20,7 +30,10 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
 
       if (storedData != null) {
         final List<dynamic> jsonList = json.decode(storedData);
-        state = jsonList.map((item) => UrlBookmark.fromJson(item)).toList();
+        final bookmarks = jsonList.map((item) => UrlBookmark.fromJson(item)).toList();
+
+        // 즐겨찾기 항목이 앞에 오도록 정렬
+        state = _sortByFavorites(bookmarks);
       }
     } catch (e) {
       print('Error loading bookmarks: $e');
@@ -33,15 +46,18 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
     try {
       final metadata = await bookmark.url.fetchUrlMetadata();
       final bookmarkWithMetadata = bookmark.copyWith(metadata: metadata);
+
+      // 새로운 북마크를 추가하고 즐겨찾기 순으로 정렬
       final updatedBookmarks = [bookmarkWithMetadata, ...state];
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      state = _sortByFavorites(updatedBookmarks);
+
+      await _saveUrlBookmarks(state);
     } catch (e) {
       print('Error adding bookmark: $e');
       // Add without metadata if fetching fails
       final updatedBookmarks = [bookmark, ...state];
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      state = _sortByFavorites(updatedBookmarks);
+      await _saveUrlBookmarks(state);
     }
   }
 
@@ -51,8 +67,9 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
         for (final bookmark in state)
           if (bookmark.id == id) updatedBookmark else bookmark,
       ];
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      // 업데이트 후 즐겨찾기 순으로 정렬
+      state = _sortByFavorites(updatedBookmarks);
+      await _saveUrlBookmarks(state);
     } catch (e) {
       print('Error updating bookmark: $e');
     }
@@ -61,8 +78,8 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
   Future<void> deleteUrlBookmark(String id) async {
     try {
       final updatedBookmarks = state.where((bookmark) => bookmark.id != id).toList();
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      state = _sortByFavorites(updatedBookmarks);
+      await _saveUrlBookmarks(state);
     } catch (e) {
       print('Error deleting bookmark: $e');
     }
@@ -71,8 +88,8 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
   Future<void> deleteUrlBookmarks(List<String> ids) async {
     try {
       final updatedBookmarks = state.where((bookmark) => !ids.contains(bookmark.id)).toList();
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      state = _sortByFavorites(updatedBookmarks);
+      await _saveUrlBookmarks(state);
     } catch (e) {
       print('Error deleting bookmarks: $e');
     }
@@ -87,8 +104,9 @@ class UrlBookmarkManager extends StateNotifier<List<UrlBookmark>> {
         return bookmark;
       }).toList();
 
-      state = updatedBookmarks;
-      await _saveUrlBookmarks(updatedBookmarks);
+      // 즐겨찾기 변경 후 재정렬
+      state = _sortByFavorites(updatedBookmarks);
+      await _saveUrlBookmarks(state);
     } catch (e) {
       print('Error toggling favorite: $e');
     }
