@@ -58,6 +58,7 @@ class _AddBookmarkBottomSheetState
   late final TextEditingController _descriptionController;
   late final TextEditingController _tagController;
   late final FocusNode _urlFocusNode;
+  final ScrollController _scrollController = ScrollController();
 
   Timer? _debounceTimer;
   List<String> _tags = [];
@@ -82,10 +83,25 @@ class _AddBookmarkBottomSheetState
     _isProcessing = false;
     _showAdditionalFields = false;
 
+    // 포커스 변경 리스너 추가 - 텍스트 필드에 포커스가 갈 때 스크롤 조정
+    _urlFocusNode.addListener(_scrollToFocusedField);
+
     // 포커스를 URL 필드에 주기
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _urlFocusNode.requestFocus();
     });
+  }
+
+  // 포커스된 필드로 스크롤하는 함수
+  void _scrollToFocusedField() {
+    if (_urlFocusNode.hasFocus && _scrollController.hasClients) {
+      // URL 필드가 포커스를 받으면 스크롤을 조정
+      _scrollController.animateTo(
+        0.0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -98,7 +114,9 @@ class _AddBookmarkBottomSheetState
     _titleController.dispose();
     _descriptionController.dispose();
     _tagController.dispose();
+    _urlFocusNode.removeListener(_scrollToFocusedField);
     _urlFocusNode.dispose();
+    _scrollController.dispose();
 
     super.dispose();
   }
@@ -228,61 +246,66 @@ class _AddBookmarkBottomSheetState
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
     final hasMetadata = metadataState.value != null;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    // 현재 컨텐츠 양에 따라 바텀시트의 초기 높이 결정
+    double initialHeight = _showAdditionalFields || hasMetadata
+        ? MediaQuery.of(context).size.height * 0.75  // 추가 필드가 있으면 75%
+        : MediaQuery.of(context).size.height * 0.5;  // 기본은 50%
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 메타데이터 프리뷰는 데이터가 있거나 로딩 중일 때만 표시
-                      if (metadataState.isLoading || hasMetadata)
-                        _buildMetadataPreview(metadataState),
+        child: IntrinsicHeight(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 메타데이터 프리뷰는 데이터가 있거나 로딩 중일 때만 표시
+                        if (metadataState.isLoading || hasMetadata)
+                          _buildMetadataPreview(metadataState),
 
-                      SizedBox(height: 16),
-                      _buildUrlField(),
+                        SizedBox(height: 16),
+                        _buildUrlField(),
 
-                      // 추가 필드는 URL이 입력되었거나 메타데이터가 있을 때만 표시
-                      if (_showAdditionalFields || hasMetadata) ...[
-                        SizedBox(height: 16),
-                        _buildTitleField(),
-                        SizedBox(height: 16),
-                        _buildDescriptionField(),
-                        SizedBox(height: 16),
-                        _buildTagsSection(),
-                        SizedBox(height: 16),
-                        _buildFavoriteToggle(),
+                        // 추가 필드는 URL이 입력되었거나 메타데이터가 있을 때만 표시
+                        if (_showAdditionalFields || hasMetadata) ...[
+                          SizedBox(height: 16),
+                          _buildTitleField(),
+                          SizedBox(height: 16),
+                          _buildDescriptionField(),
+                          SizedBox(height: 16),
+                          _buildTagsSection(),
+                          SizedBox(height: 16),
+                          _buildFavoriteToggle(),
+                        ],
+
+                        SizedBox(height: 24),
                       ],
-
-                      SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            _buildAddButton(),
-          ],
+              _buildAddButton(),
+            ],
+          ),
         ),
       ),
     );

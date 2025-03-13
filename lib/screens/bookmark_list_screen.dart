@@ -30,34 +30,34 @@ class BookmarkListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
-      appBar: _buildAppBar(context, ref, isDeleteMode, selectedBookmarks, isGridView),
-      body: _buildBookmarkList(context, ref, bookmarks, isDeleteMode, selectedBookmarks, isGridView),
+      appBar: _buildAppBar(
+          context, ref, isDeleteMode, selectedBookmarks, isGridView),
+      body: _buildBookmarkList(
+          context, ref, bookmarks, isDeleteMode, selectedBookmarks, isGridView),
       floatingActionButton: !isDeleteMode ? _buildAddButton(context) : null,
     );
   }
 
   // 앱바 구성
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context,
-      WidgetRef ref,
-      bool isDeleteMode,
-      Set<String> selectedBookmarks,
-      bool isGridView
-      ) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref,
+      bool isDeleteMode, Set<String> selectedBookmarks, bool isGridView) {
     return AppBar(
       backgroundColor: Colors.grey[900],
       elevation: 0,
       title: isDeleteMode
-          ? Text("${selectedBookmarks.length} selected", style: TextStyle(color: Colors.white))
-          : Text("Bookmarks", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ? Text("${selectedBookmarks.length} selected",
+              style: TextStyle(color: Colors.white))
+          : Text("Bookmarks",
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       leading: isDeleteMode
           ? IconButton(
-        icon: Icon(Icons.close, color: Colors.white),
-        onPressed: () {
-          ref.read(selectedBookmarksProvider.notifier).state = {};
-          ref.read(isDeleteModeProvider.notifier).state = false;
-        },
-      )
+              icon: Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                ref.read(selectedBookmarksProvider.notifier).state = {};
+                ref.read(isDeleteModeProvider.notifier).state = false;
+              },
+            )
           : null,
       actions: [
         // 태그 검색 버튼 (삭제 모드가 아닐 때만 표시)
@@ -71,8 +71,10 @@ class BookmarkListScreen extends ConsumerWidget {
         // 그리드/리스트 뷰 전환 버튼
         if (!isDeleteMode)
           IconButton(
-            icon: Icon(isGridView ? Icons.view_list : Icons.grid_view, color: Colors.white),
-            onPressed: () => ref.read(viewModeProvider.notifier).toggleViewMode(),
+            icon: Icon(isGridView ? Icons.view_list : Icons.grid_view,
+                color: Colors.white),
+            onPressed: () =>
+                ref.read(viewModeProvider.notifier).toggleViewMode(),
             tooltip: isGridView ? "리스트 뷰로 전환" : "그리드 뷰로 전환",
           ),
 
@@ -80,7 +82,8 @@ class BookmarkListScreen extends ConsumerWidget {
         if (!isDeleteMode)
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.white),
-            onPressed: () => ref.read(isDeleteModeProvider.notifier).state = true,
+            onPressed: () =>
+                ref.read(isDeleteModeProvider.notifier).state = true,
             tooltip: "삭제 모드",
           ),
 
@@ -107,8 +110,7 @@ class BookmarkListScreen extends ConsumerWidget {
       List<UrlBookmark> bookmarks,
       bool isDeleteMode,
       Set<String> selectedBookmarks,
-      bool isGridView
-      ) {
+      bool isGridView) {
     // 북마크가 없는 경우 빈 상태 표시
     if (bookmarks.isEmpty) {
       return _buildEmptyState(context);
@@ -123,9 +125,8 @@ class BookmarkListScreen extends ConsumerWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           itemCount: bookmarks.length,
-          itemBuilder: (context, index) => _buildBookmarkItem(
-              context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
-          ),
+          itemBuilder: (context, index) => _buildBookmarkItem(context, ref,
+              bookmarks[index], isDeleteMode, selectedBookmarks, isGridView),
         ),
       );
     }
@@ -135,9 +136,8 @@ class BookmarkListScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(12.0),
         child: ListView.builder(
           itemCount: bookmarks.length,
-          itemBuilder: (context, index) => _buildBookmarkItem(
-              context, ref, bookmarks[index], isDeleteMode, selectedBookmarks, isGridView
-          ),
+          itemBuilder: (context, index) => _buildBookmarkItem(context, ref,
+              bookmarks[index], isDeleteMode, selectedBookmarks, isGridView),
         ),
       );
     }
@@ -150,15 +150,18 @@ class BookmarkListScreen extends ConsumerWidget {
       UrlBookmark bookmark,
       bool isDeleteMode,
       Set<String> selectedBookmarks,
-      bool isGridView
-      ) {
+      bool isGridView) {
     final isSelected = selectedBookmarks.contains(bookmark.id);
 
     return GestureDetector(
-      onLongPress: !isDeleteMode ? () {
-        ref.read(isDeleteModeProvider.notifier).state = true;
-        ref.read(selectedBookmarksProvider.notifier).state = {bookmark.id};
-      } : null,
+      onLongPress: !isDeleteMode
+          ? () {
+              ref.read(isDeleteModeProvider.notifier).state = true;
+              ref.read(selectedBookmarksProvider.notifier).state = {
+                bookmark.id
+              };
+            }
+          : null,
       child: Stack(
         children: [
           BookmarkCard(
@@ -181,7 +184,8 @@ class BookmarkListScreen extends ConsumerWidget {
               right: 8,
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.red : Colors.white.withOpacity(0.8),
+                  color:
+                      isSelected ? Colors.red : Colors.white.withOpacity(0.8),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -272,7 +276,8 @@ class BookmarkListScreen extends ConsumerWidget {
   }
 
   // 선택 토글 함수
-  void _toggleSelection(WidgetRef ref, String bookmarkId, Set<String> currentSelection) {
+  void _toggleSelection(
+      WidgetRef ref, String bookmarkId, Set<String> currentSelection) {
     final updatedSelection = Set<String>.from(currentSelection);
     if (updatedSelection.contains(bookmarkId)) {
       updatedSelection.remove(bookmarkId);
@@ -284,18 +289,8 @@ class BookmarkListScreen extends ConsumerWidget {
 
   // URL 열기
   Future<void> _launchBookmarkUrl(BuildContext context, String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw Exception('Could not launch $url');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("URL을 열 수 없습니다: $url")),
-      );
-    }
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   // 북마크 추가 시트 표시
@@ -319,7 +314,8 @@ class BookmarkListScreen extends ConsumerWidget {
   }
 
   // 삭제 확인 대화상자
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Set<String> selectedBookmarks) {
+  void _showDeleteConfirmation(
+      BuildContext context, WidgetRef ref, Set<String> selectedBookmarks) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -333,7 +329,9 @@ class BookmarkListScreen extends ConsumerWidget {
           TextButton(
             child: Text("삭제", style: TextStyle(color: Colors.red)),
             onPressed: () {
-              ref.read(urlBookmarkProvider.notifier).deleteUrlBookmarks(selectedBookmarks.toList());
+              ref
+                  .read(urlBookmarkProvider.notifier)
+                  .deleteUrlBookmarks(selectedBookmarks.toList());
               ref.read(selectedBookmarksProvider.notifier).state = {};
               ref.read(isDeleteModeProvider.notifier).state = false;
               Navigator.of(context).pop();

@@ -1,67 +1,85 @@
 enum SiteType {
-  // 🔹 글로벌 사이트
+  // ===== Global Social Media =====
   youtube(["youtube.com", "youtu.be"], ["YouTube", "Video"]),
   instagram(["instagram.com"], ["Instagram", "Social Media"]),
   twitter(["twitter.com", "x.com"], ["Twitter", "Social Media"]),
-  github(["github.com"], ["GitHub", "Development"]),
-  linkedin(["linkedin.com"], ["LinkedIn", "Professional"]),
-  reddit(["reddit.com"], ["Reddit", "Community"]),
   facebook(["facebook.com"], ["Facebook", "Social Media"]),
-  tiktok(["tiktok.com"], ["TikTok", "Short Video"]),
-  medium(["medium.com"], ["Medium", "Blog"]),
-  stackoverflow(["stackoverflow.com"], ["Stack Overflow", "Development"]),
-  hackernews(["news.ycombinator.com"], ["Hacker News", "Tech"]),
-  devto(["dev.to"], ["Development", "Blog"]),
-  twitch(["twitch.tv"], ["Twitch", "Live Streaming"]),
+  tiktok(["tiktok.com"], ["TikTok", "Video"]),
+  reddit(["reddit.com"], ["Reddit", "Community"]),
+
+  // ===== Global Video & Streaming =====
   netflix(["netflix.com"], ["Netflix", "Streaming"]),
-  disneyplus(["disneyplus.com"], ["Disney+", "Streaming"]),
+  disneyPlus(["disneyplus.com"], ["Disney+", "Streaming"]),
   hulu(["hulu.com"], ["Hulu", "Streaming"]),
+  twitch(["twitch.tv"], ["Twitch", "Live Streaming"]),
+
+  // ===== Global Development & Tech =====
+  github(["github.com"], ["GitHub", "Development"]),
+  stackoverflow(["stackoverflow.com"], ["Stack Overflow", "Development"]),
+  hackerNews(["news.ycombinator.com"], ["Hacker News", "Tech"]),
+  devTo(["dev.to"], ["Development", "Blog"]),
+  medium(["medium.com"], ["Medium", "Blog"]),
+
+  // ===== Global Professional =====
+  linkedin(["linkedin.com"], ["LinkedIn", "Professional"]),
+
+  // ===== Global Cloud Storage =====
   googleDrive(["drive.google.com"], ["Google Drive", "Cloud"]),
   dropbox(["dropbox.com"], ["Dropbox", "Cloud"]),
-  onedrive(["onedrive.live.com"], ["OneDrive", "Cloud"]),
+  oneDrive(["onedrive.live.com"], ["OneDrive", "Cloud"]),
 
-  // 🔹 글로벌 뉴스 & 쇼핑
-  news(["bbc.com", "cnn.com", "nytimes.com", "news.google.com"], ["News"]),
-  shopping(["amazon.com", "ebay.com", "aliexpress.com"], ["Shopping"]),
-  music(["spotify.com", "soundcloud.com", "music.apple.com"], ["Music"]),
+  // ===== Global News =====
+  bbcNews(["bbc.com"], ["BBC", "News"]),
+  cnnNews(["cnn.com"], ["CNN", "News"]),
+  nytNews(["nytimes.com"], ["New York Times", "News"]),
+  googleNews(["news.google.com"], ["Google News", "News"]),
 
-  // 📰 뉴스
-  naverNews(["news.naver.com"], ["News"]),
-  daumNews(["news.daum.net"], ["News"]),
-  joinsNews(["joins.com"], ["News"]),
-  haniNews(["hani.co.kr"], ["News"]),
-  chosunNews(["chosun.com"], ["News"]),
-  dongaNews(["donga.com"], ["News"]),
+  // ===== Global Shopping =====
+  amazon(["amazon.com"], ["Amazon", "Shopping"]),
+  ebay(["ebay.com"], ["eBay", "Shopping"]),
+  aliexpress(["aliexpress.com"], ["AliExpress", "Shopping"]),
 
-  // 🔹 한국 사이트 (국가명 삭제)
-  // 📢 포털 / 검색
-  naver(["naver.com"], ["Naver"]),
-  daum(["daum.net"], ["Daum"]),
-  zum(["zum.com"], ["Zum"]),
+  // ===== Global Music =====
+  spotify(["spotify.com"], ["Spotify", "Music"]),
+  soundcloud(["soundcloud.com"], ["SoundCloud", "Music"]),
+  appleMusic(["music.apple.com"], ["Apple Music", "Music"]),
 
-  // 🛒 쇼핑
-  gmarket(["gmarket.co.kr"], ["Shopping"]),
-  coupang(["coupang.com"], ["Shopping"]),
-  elevenst(["11st.co.kr"], ["Shopping"]),
-  auction(["auction.co.kr"], ["Shopping"]),
+  // ===== Korean Portals =====
+  naver(["naver.com"], ["Naver", "Portal"]),
+  daum(["daum.net"], ["Daum", "Portal"]),
+  zum(["zum.com"], ["Zum", "Portal"]),
 
-  // 🎮 커뮤니티 & 포럼
-  dcinside(["dcinside.com"], ["Community"]),
-  clien(["clien.net"], ["Community"]),
-  ruliweb(["ruliweb.com"], ["Gaming", "Community"]),
-  ppomppu(["ppomppu.co.kr"], ["Community"]),
-  fmkorea(["fmkorea.com"], ["Community"]),
+  // ===== Korean News =====
+  naverNews(["news.naver.com"], ["Naver News", "News"]),
+  daumNews(["news.daum.net"], ["Daum News", "News"]),
+  joinsNews(["joins.com"], ["Joins", "News"]),
+  haniNews(["hani.co.kr"], ["Hani", "News"]),
+  chosunNews(["chosun.com"], ["Chosun", "News"]),
+  dongaNews(["donga.com"], ["Donga", "News"]),
 
-  // 🎥 동영상 스트리밍
-  tving(["tving.com"], ["tving"]),
-  wavve(["wavve.com"], ["wavve"]),
-  watcha(["watcha.com"], ["watcha"]),
+  // ===== Korean Shopping =====
+  gmarket(["gmarket.co.kr"], ["Gmarket", "Shopping"]),
+  coupang(["coupang.com"], ["Coupang", "Shopping"]),
+  elevenst(["11st.co.kr"], ["11st", "Shopping"]),
+  auction(["auction.co.kr"], ["Auction", "Shopping"]),
 
-  // 🎵 음악
-  melon(["melon.com"], ["Music"]),
-  genie(["genie.co.kr"], ["Music"]),
-  bugs(["bugs.co.kr"], ["Music"]),
-  flo(["flo.com"], ["Music"]);
+  // ===== Korean Communities =====
+  dcinside(["dcinside.com"], ["DCinside", "Community"]),
+  clien(["clien.net"], ["Clien", "Community"]),
+  ruliweb(["ruliweb.com"], ["Ruliweb", "Gaming", "Community"]),
+  ppomppu(["ppomppu.co.kr"], ["Ppomppu", "Community"]),
+  fmkorea(["fmkorea.com"], ["FMKorea", "Community"]),
+
+  // ===== Korean Streaming =====
+  tving(["tving.com"], ["TVING", "Streaming"]),
+  wavve(["wavve.com"], ["Wavve", "Streaming"]),
+  watcha(["watcha.com"], ["Watcha", "Streaming"]),
+
+  // ===== Korean Music =====
+  melon(["melon.com"], ["Melon", "Music"]),
+  genie(["genie.co.kr"], ["Genie", "Music"]),
+  bugs(["bugs.co.kr"], ["Bugs", "Music"]),
+  flo(["flo.com"], ["FLO", "Music"]);
 
   final List<String> domains;
   final List<String> tags;

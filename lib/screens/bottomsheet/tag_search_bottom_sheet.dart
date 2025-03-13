@@ -29,7 +29,8 @@ class TagSearchBottomSheet extends ConsumerStatefulWidget {
   const TagSearchBottomSheet({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<TagSearchBottomSheet> createState() => _TagSearchBottomSheetState();
+  ConsumerState<TagSearchBottomSheet> createState() =>
+      _TagSearchBottomSheetState();
 }
 
 class _TagSearchBottomSheetState extends ConsumerState<TagSearchBottomSheet> {
@@ -101,8 +102,6 @@ class _TagSearchBottomSheetState extends ConsumerState<TagSearchBottomSheet> {
         children: [
           _buildHeader(),
           _buildSearchField(),
-          _buildSelectedTags(selectedTags),
-          Divider(),
           _buildTagsList(selectedTags),
           _buildApplyButton(),
         ],
@@ -127,28 +126,9 @@ class _TagSearchBottomSheetState extends ConsumerState<TagSearchBottomSheet> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '태그 검색',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  ref.read(selectedTagsFilterProvider.notifier).state = {};
-                },
-                child: Text('초기화'),
-              ),
-              IconButton(
-                icon: Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        ],
+      child: Text(
+        '태그 검색',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -167,54 +147,6 @@ class _TagSearchBottomSheetState extends ConsumerState<TagSearchBottomSheet> {
           contentPadding: EdgeInsets.symmetric(vertical: 12),
         ),
         onChanged: _filterTags,
-      ),
-    );
-  }
-
-  Widget _buildSelectedTags(Set<String> selectedTags) {
-    if (selectedTags.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Text(
-          '선택된 태그가 없습니다',
-          style: TextStyle(
-            color: Colors.grey,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '선택된 태그:',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: selectedTags.map((tag) {
-              return Chip(
-                label: Text(tag),
-                backgroundColor: Colors.blue.shade100,
-                deleteIcon: Icon(Icons.close, size: 18),
-                onDeleted: () {
-                  final updatedTags = Set<String>.from(selectedTags);
-                  updatedTags.remove(tag);
-                  ref.read(selectedTagsFilterProvider.notifier).state = updatedTags;
-                },
-              );
-            }).toList(),
-          ),
-        ],
       ),
     );
   }
@@ -309,9 +241,7 @@ class _TagSearchBottomSheetState extends ConsumerState<TagSearchBottomSheet> {
               minimumSize: Size(double.infinity, 54),
             ),
             child: Text(
-              selectedTags.isEmpty
-                  ? "모든 북마크 보기"
-                  : "필터 적용하기",
+              selectedTags.isEmpty ? "모든 북마크 보기" : "필터 적용하기",
               style: TextStyle(fontSize: 16),
             ),
           ),
