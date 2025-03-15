@@ -144,7 +144,8 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
-      appBar: _buildAppBar(context, isDeleteMode, selectedBookmarks, isGridView, isSearchMode),
+      appBar: _buildAppBar(
+          context, isDeleteMode, selectedBookmarks, isGridView, isSearchMode),
       body: Column(
         children: [
           // 검색 모드일 때 검색 인터페이스 표시
@@ -157,23 +158,18 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
                 isSearchMode ? filteredBookmarks : bookmarks,
                 isDeleteMode,
                 selectedBookmarks,
-                isGridView
-            ),
+                isGridView),
           ),
         ],
       ),
-      floatingActionButton: !isDeleteMode && !isSearchMode ? _buildAddButton() : null,
+      floatingActionButton:
+          !isDeleteMode && !isSearchMode ? _buildAddButton() : null,
     );
   }
 
   // 앱바 구성
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context,
-      bool isDeleteMode,
-      Set<String> selectedBookmarks,
-      bool isGridView,
-      bool isSearchMode) {
-
+  PreferredSizeWidget _buildAppBar(BuildContext context, bool isDeleteMode,
+      Set<String> selectedBookmarks, bool isGridView, bool isSearchMode) {
     if (isSearchMode) {
       // 검색 모드 앱바
       return AppBar(
@@ -226,7 +222,8 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
           // 태그 검색 버튼
           IconButton(
             icon: Icon(Icons.tag, color: Colors.white),
-            onPressed: () => ref.read(isSearchModeProvider.notifier).state = true,
+            onPressed: () =>
+                ref.read(isSearchModeProvider.notifier).state = true,
             tooltip: "태그 검색",
           ),
 
@@ -243,7 +240,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.white),
             onPressed: () =>
-            ref.read(isDeleteModeProvider.notifier).state = true,
+                ref.read(isDeleteModeProvider.notifier).state = true,
             tooltip: "삭제 모드",
           ),
         ],
@@ -277,11 +274,11 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               contentPadding: EdgeInsets.symmetric(vertical: 12),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: Icon(Icons.clear, color: Colors.grey),
-                onPressed: () {
-                  _searchController.clear();
-                },
-              )
+                      icon: Icon(Icons.clear, color: Colors.grey),
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                    )
                   : null,
             ),
           ),
@@ -291,30 +288,32 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             height: 50,
             margin: EdgeInsets.only(top: 12),
             child: _filteredTags.isEmpty
-                ? Center(child: Text('태그가 없습니다', style: TextStyle(color: Colors.grey)))
+                ? Center(
+                    child:
+                        Text('태그가 없습니다', style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _filteredTags.length,
-              itemBuilder: (context, index) {
-                final tag = _filteredTags[index];
-                final isSelected = selectedTags.contains(tag);
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _filteredTags.length,
+                    itemBuilder: (context, index) {
+                      final tag = _filteredTags[index];
+                      final isSelected = selectedTags.contains(tag);
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(tag),
-                    selected: isSelected,
-                    onSelected: (_) => _toggleTagSelection(tag),
-                    backgroundColor: Colors.grey[800],
-                    selectedColor: Colors.blue,
-                    checkmarkColor: Colors.white,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[300],
-                    ),
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: FilterChip(
+                          label: Text(tag),
+                          selected: isSelected,
+                          onSelected: (_) => _toggleTagSelection(tag),
+                          backgroundColor: Colors.grey[800],
+                          selectedColor: Colors.blue,
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.grey[300],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -322,12 +321,8 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
   }
 
   // 북마크 목록 표시 (그리드 또는 리스트)
-  Widget _buildBookmarkList(
-      BuildContext context,
-      List<UrlBookmark> bookmarks,
-      bool isDeleteMode,
-      Set<String> selectedBookmarks,
-      bool isGridView) {
+  Widget _buildBookmarkList(BuildContext context, List<UrlBookmark> bookmarks,
+      bool isDeleteMode, Set<String> selectedBookmarks, bool isGridView) {
     // 북마크가 없는 경우 빈 상태 표시
     if (bookmarks.isEmpty) {
       return _buildEmptyState();
@@ -361,22 +356,18 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
   }
 
   // 개별 북마크 아이템 구성
-  Widget _buildBookmarkItem(
-      BuildContext context,
-      UrlBookmark bookmark,
-      bool isDeleteMode,
-      Set<String> selectedBookmarks,
-      bool isGridView) {
+  Widget _buildBookmarkItem(BuildContext context, UrlBookmark bookmark,
+      bool isDeleteMode, Set<String> selectedBookmarks, bool isGridView) {
     final isSelected = selectedBookmarks.contains(bookmark.id);
 
     return GestureDetector(
       onLongPress: !isDeleteMode
           ? () {
-        ref.read(isDeleteModeProvider.notifier).state = true;
-        ref.read(selectedBookmarksProvider.notifier).state = {
-          bookmark.id
-        };
-      }
+              ref.read(isDeleteModeProvider.notifier).state = true;
+              ref.read(selectedBookmarksProvider.notifier).state = {
+                bookmark.id
+              };
+            }
           : null,
       child: Stack(
         children: [
@@ -401,7 +392,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color:
-                  isSelected ? Colors.red : Colors.white.withOpacity(0.8),
+                      isSelected ? Colors.red : Colors.white.withOpacity(0.8),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -530,7 +521,8 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
   }
 
   // 북마크 선택 토글 함수
-  void _toggleBookmarkSelection(String bookmarkId, Set<String> currentSelection) {
+  void _toggleBookmarkSelection(
+      String bookmarkId, Set<String> currentSelection) {
     final updatedSelection = Set<String>.from(currentSelection);
     if (updatedSelection.contains(bookmarkId)) {
       updatedSelection.remove(bookmarkId);
@@ -545,8 +537,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
     try {
       final uri = Uri.parse(url);
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   // 북마크 추가 시트 표시
@@ -559,7 +550,8 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, Set<String> selectedBookmarks) {
+  void _showDeleteConfirmation(
+      BuildContext context, Set<String> selectedBookmarks) {
     showCustomConfirmDialog(
       context: context,
       title: "북마크 삭제",
@@ -568,19 +560,16 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       confirmText: "삭제",
       isDestructive: true,
       icon: Icons.delete_forever,
-    ).then((confirmed) {
-      if (confirmed == true) {
-        ref
-            .read(urlBookmarkProvider.notifier)
-            .deleteUrlBookmarks(selectedBookmarks.toList());
-        ref.read(selectedBookmarksProvider.notifier).state = {};
-        ref.read(isDeleteModeProvider.notifier).state = false;
-
-        // 삭제 후 스낵바 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("북마크가 삭제되었습니다")),
-        );
-      }
-    });
+    ).then(
+      (confirmed) {
+        if (confirmed == true) {
+          ref
+              .read(urlBookmarkProvider.notifier)
+              .deleteUrlBookmarks(selectedBookmarks.toList());
+          ref.read(selectedBookmarksProvider.notifier).state = {};
+          ref.read(isDeleteModeProvider.notifier).state = false;
+        }
+      },
+    );
   }
 }
