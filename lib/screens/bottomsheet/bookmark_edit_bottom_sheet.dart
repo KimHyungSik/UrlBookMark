@@ -61,6 +61,7 @@ class _BookmarkEditBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = screenHeight * 0.8; // 화면 높이의 80%로 제한
     final bookmarkState = ref.watch(bookmarkProvider);
@@ -76,34 +77,37 @@ class _BookmarkEditBottomSheetState
       constraints: BoxConstraints(
         maxHeight: maxHeight,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader(),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPreviewImage(bookmarkState?.metadata?.image),
-                  SizedBox(height: 16),
-                  _buildUrlField(),
-                  SizedBox(height: 16),
-                  _buildTitleField(),
-                  SizedBox(height: 16),
-                  _buildDescriptionField(),
-                  SizedBox(height: 16),
-                  _buildTagsSection(),
-                  SizedBox(height: 16),
-                  _buildFavoriteToggle(),
-                  SizedBox(height: 24),
-                ],
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPreviewImage(bookmarkState?.metadata?.image),
+                    SizedBox(height: 16),
+                    _buildUrlField(),
+                    SizedBox(height: 16),
+                    _buildTitleField(),
+                    SizedBox(height: 16),
+                    _buildDescriptionField(),
+                    SizedBox(height: 16),
+                    _buildTagsSection(),
+                    SizedBox(height: 16),
+                    _buildFavoriteToggle(),
+                    SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildActionButtons(),
-        ],
+            _buildActionButtons(),
+          ],
+        ),
       ),
     );
   }

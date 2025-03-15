@@ -228,27 +228,26 @@ class _AddBookmarkBottomSheetState
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
     final hasMetadata = metadataState.value != null;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isKeyboardVisible = keyboardHeight > 0;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Set maximum height to 85% of screen height
     final maxSheetHeight = screenHeight * 0.85;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        // Set constraints for maximum height
-        constraints: BoxConstraints(
-          maxHeight: maxSheetHeight,
+    return Container(
+      // Set constraints for maximum height
+      constraints: BoxConstraints(
+        maxHeight: maxSheetHeight,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
         child: IntrinsicHeight(
           child: Column(
             mainAxisSize: MainAxisSize.min,
