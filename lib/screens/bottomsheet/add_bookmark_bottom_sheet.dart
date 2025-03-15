@@ -6,6 +6,7 @@ import '../../bookmark_manager.dart';
 import '../../common/tags.dart';
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
+import 'bookmark_edit_bottom_sheet.dart';
 
 // URL 메타데이터 Provider - 고유 ID를 사용하여 매번 리셋되도록 함
 final urlMetadataProvider = StateNotifierProvider.autoDispose<
@@ -460,18 +461,138 @@ class _AddBookmarkBottomSheetState
   }
 
   Widget _buildFavoriteToggle() {
-    return SwitchListTile(
-      title: Text("즐겨찾기에 추가"),
-      secondary: Icon(
-        _isFavorite ? Icons.star : Icons.star_border,
-        color: _isFavorite ? Colors.amber : null,
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _isFavorite
+              ? [Color(0xFFFFF8E1), Color(0xFFFFECB3)] // 즐겨찾기 활성화 시 따뜻한 그라데이션
+              : [Colors.white, Colors.grey.shade50], // 비활성화 시 기본 그라데이션
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _isFavorite
+                ? Colors.amber.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      value: _isFavorite,
-      onChanged: (value) {
-        setState(() {
-          _isFavorite = value;
-        });
-      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isFavorite = !_isFavorite;
+              });
+              // 리버팟 상태 업데이트 (필요한 경우)
+              ref.read(bookmarkProvider.notifier).state = ref
+                  .read(bookmarkProvider.notifier)
+                  .state
+                  ?.copyWith(isFavorite: _isFavorite);
+            },
+            splashColor: _isFavorite
+                ? Colors.amber.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.1),
+            highlightColor: _isFavorite
+                ? Colors.amber.withOpacity(0.2)
+                : Colors.transparent,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  // 아이콘 부분
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _isFavorite
+                          ? Colors.amber.withOpacity(0.2)
+                          : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 300),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return ScaleTransition(scale: animation, child: child);
+                      },
+                      child: Icon(
+                        _isFavorite ? Icons.star : Icons.star_border,
+                        key: ValueKey<bool>(_isFavorite),
+                        color:
+                            _isFavorite ? Colors.amber : Colors.grey.shade600,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+
+                  // 텍스트 부분
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "즐겨찾기에 추가",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: _isFavorite
+                                ? Colors.amber.shade800
+                                : Colors.black87,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          _isFavorite
+                              ? "북마크 목록의 상단에 표시됩니다"
+                              : "이 북마크를 즐겨찾기에 추가합니다",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _isFavorite
+                                ? Colors.amber.shade600
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 스위치 부분
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch(
+                      value: _isFavorite,
+                      activeColor: Colors.amber,
+                      activeTrackColor: Colors.amber.shade200,
+                      inactiveThumbColor: Colors.grey.shade400,
+                      inactiveTrackColor: Colors.grey.shade300,
+                      onChanged: (value) {
+                        setState(() {
+                          _isFavorite = value;
+                        });
+                        // 리버팟 상태 업데이트 (필요한 경우)
+                        ref.read(bookmarkProvider.notifier).state = ref
+                            .read(bookmarkProvider.notifier)
+                            .state
+                            ?.copyWith(isFavorite: value);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
