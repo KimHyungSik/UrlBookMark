@@ -221,10 +221,6 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       return AppBar(
         backgroundColor: Colors.grey[900],
         elevation: 0,
-        title: Text(
-            'bookmarks.list_title'.tr(),
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-        ),
         actions: [
           // 태그 검색 버튼
           IconButton(
