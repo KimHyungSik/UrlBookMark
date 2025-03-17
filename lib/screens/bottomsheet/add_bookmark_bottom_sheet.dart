@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:easy_localization/easy_localization.dart';  // easy_localization 추가
+import 'package:easy_localization/easy_localization.dart';
 import '../../bookmark_manager.dart';
 import '../../common/tags.dart';
 import '../../model/url_marker.dart';

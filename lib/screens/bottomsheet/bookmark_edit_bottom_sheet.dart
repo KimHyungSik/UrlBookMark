@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_book_marker/bookmark_manager.dart';
@@ -133,7 +134,7 @@ class _BookmarkEditBottomSheetState
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '북마크 수정',
+            'bookmarks.edit_title'.tr(),
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           IconButton(
@@ -177,7 +178,7 @@ class _BookmarkEditBottomSheetState
     return TextFormField(
       controller: _urlController,
       decoration: InputDecoration(
-        labelText: 'URL',
+        labelText: 'form.url'.tr(),
         prefixIcon: Icon(Icons.link),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -194,7 +195,7 @@ class _BookmarkEditBottomSheetState
     return TextFormField(
       controller: _titleController,
       decoration: InputDecoration(
-        labelText: '제목',
+        labelText: 'form.title'.tr(),
         prefixIcon: Icon(Icons.title),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -213,7 +214,7 @@ class _BookmarkEditBottomSheetState
     return TextFormField(
       controller: _descriptionController,
       decoration: InputDecoration(
-        labelText: '설명',
+        labelText: 'form.title'.tr(),
         prefixIcon: Icon(Icons.description),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -233,7 +234,7 @@ class _BookmarkEditBottomSheetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("태그", style: TextStyle(fontWeight: FontWeight.bold)),
+        Text('form.tags'.tr(), style: TextStyle(fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -258,7 +259,7 @@ class _BookmarkEditBottomSheetState
               child: TextFormField(
                 controller: _tagController,
                 decoration: InputDecoration(
-                  hintText: '태그 추가',
+                  hintText: 'form.add_tag'.tr(),
                   prefixIcon: Icon(Icons.tag),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -292,7 +293,7 @@ class _BookmarkEditBottomSheetState
         gradient: LinearGradient(
           colors: _isFavorite
               ? [Color(0xFFFFF8E1), Color(0xFFFFECB3)] // 즐겨찾기 활성화 시 따뜻한 그라데이션
-              : [Colors.white, Colors.grey.shade50],  // 비활성화 시 기본 그라데이션
+              : [Colors.white, Colors.grey.shade50], // 비활성화 시 기본 그라데이션
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -322,8 +323,12 @@ class _BookmarkEditBottomSheetState
                   .state
                   ?.copyWith(isFavorite: _isFavorite);
             },
-            splashColor: _isFavorite ? Colors.amber.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
-            highlightColor: _isFavorite ? Colors.amber.withOpacity(0.2) : Colors.transparent,
+            splashColor: _isFavorite
+                ? Colors.amber.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.1),
+            highlightColor: _isFavorite
+                ? Colors.amber.withOpacity(0.2)
+                : Colors.transparent,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -334,18 +339,22 @@ class _BookmarkEditBottomSheetState
                     curve: Curves.easeInOut,
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _isFavorite ? Colors.amber.withOpacity(0.2) : Colors.grey.shade100,
+                      color: _isFavorite
+                          ? Colors.amber.withOpacity(0.2)
+                          : Colors.grey.shade100,
                       shape: BoxShape.circle,
                     ),
                     child: AnimatedSwitcher(
                       duration: Duration(milliseconds: 300),
-                      transitionBuilder: (Widget child, Animation<double> animation) {
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
                         return ScaleTransition(scale: animation, child: child);
                       },
                       child: Icon(
                         _isFavorite ? Icons.star : Icons.star_border,
                         key: ValueKey<bool>(_isFavorite),
-                        color: _isFavorite ? Colors.amber : Colors.grey.shade600,
+                        color:
+                            _isFavorite ? Colors.amber : Colors.grey.shade600,
                         size: 28,
                       ),
                     ),
@@ -358,19 +367,25 @@ class _BookmarkEditBottomSheetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "즐겨찾기에 추가",
+                          'favorite.title'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _isFavorite ? Colors.amber.shade800 : Colors.black87,
+                            color: _isFavorite
+                                ? Colors.amber.shade800
+                                : Colors.black87,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          _isFavorite ? "북마크 목록의 상단에 표시됩니다" : "이 북마크를 즐겨찾기에 추가합니다",
+                          _isFavorite
+                              ? 'favorite.description'.tr()
+                              : 'favorite.add_description'.tr(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: _isFavorite ? Colors.amber.shade600 : Colors.grey.shade600,
+                            color: _isFavorite
+                                ? Colors.amber.shade600
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -436,7 +451,8 @@ class _BookmarkEditBottomSheetState
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text("삭제", style: TextStyle(color: Colors.red)),
+              child: Text('actions.delete'.tr(),
+                  style: TextStyle(color: Colors.red)),
             ),
           ),
           SizedBox(width: 16),
@@ -460,7 +476,8 @@ class _BookmarkEditBottomSheetState
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : Text("저장", style: TextStyle(color: Colors.white)),
+                  : Text('actions.save'.tr(),
+                      style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
@@ -512,7 +529,7 @@ class _BookmarkEditBottomSheetState
                 _isLoading = false;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("URL 정보를 가져오는데 실패했습니다")),
+                SnackBar(content: Text('error.fetch_failed'.tr())),
               );
             }
           }
@@ -557,26 +574,25 @@ class _BookmarkEditBottomSheetState
   void _showDeleteConfirmation() {
     showCustomConfirmDialog(
       context: context,
-      title: "북마크 삭제",
-      message: "이 북마크를 삭제하시겠습니까?",
-      cancelText: "취소",
-      confirmText: "삭제",
+      title: 'dialog.delete_title'.tr(),
+      message: 'dialog.delete_message'.tr(),
+      cancelText: 'actions.cancel'.tr(),
+      confirmText: 'actions.delete'.tr(),
       isDestructive: true,
       icon: Icons.delete_forever,
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        // 북마크 삭제
-        await ref
-            .read(urlBookmarkProvider.notifier)
-            .deleteUrlBookmark(widget.bookmark.id);
+    ).then(
+      (confirmed) async {
+        if (confirmed == true) {
+          // 북마크 삭제
+          await ref
+              .read(urlBookmarkProvider.notifier)
+              .deleteUrlBookmark(widget.bookmark.id);
 
-        if (mounted) {
-          Navigator.of(context).pop(); // 바텀시트 닫기
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("북마크가 삭제되었습니다")),
-          );
+          if (mounted) {
+            Navigator.of(context).pop(); // 바텀시트 닫기
+          }
         }
-      }
-    });
+      },
+    );
   }
 }
