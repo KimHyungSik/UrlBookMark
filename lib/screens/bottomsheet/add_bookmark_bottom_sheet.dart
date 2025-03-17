@@ -2,15 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:easy_localization/easy_localization.dart';  // easy_localization 추가
 import '../../bookmark_manager.dart';
 import '../../common/tags.dart';
 import '../../model/url_marker.dart';
 import '../../model/url_metadata.dart';
-import 'bookmark_edit_bottom_sheet.dart';
+import '../../widget/custom_dialog.dart';
 
 // URL 메타데이터 Provider - 고유 ID를 사용하여 매번 리셋되도록 함
-final urlMetadataProvider = StateNotifierProvider.autoDispose<
-    UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
+final urlMetadataProvider = StateNotifierProvider.autoDispose<UrlMetadataNotifier, AsyncValue<UrlMetadata?>>((ref) {
   return UrlMetadataNotifier();
 });
 
@@ -162,12 +162,30 @@ class _AddBookmarkBottomSheetState
 
         if (mounted) {
           Navigator.of(context).pop(); // 바텀시트 닫기
+          // 추가 성공 알림 표시
+          showCustomAlertDialog(
+            context: context,
+            title: 'dialog.update_success'.tr(),
+            message: 'dialog.bookmark_updated'.tr(),
+            buttonText: 'actions.confirm'.tr(),
+            icon: Icons.check_circle,
+            iconColor: Colors.green,
+          );
         }
       } catch (e) {
         if (mounted) {
           setState(() {
             _isProcessing = false;
           });
+          // 오류 발생 알림
+          showCustomAlertDialog(
+            context: context,
+            title: 'dialog.error'.tr(),
+            message: 'dialog.update_error'.tr(),
+            buttonText: 'actions.confirm'.tr(),
+            icon: Icons.error_outline,
+            iconColor: Colors.red,
+          );
         }
       }
     }
@@ -229,26 +247,24 @@ class _AddBookmarkBottomSheetState
   Widget build(BuildContext context) {
     final metadataState = ref.watch(urlMetadataProvider);
     final hasMetadata = metadataState.value != null;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
     final screenHeight = MediaQuery.of(context).size.height;
+    final maxHeight = screenHeight * 0.85; // 화면 높이의 85%로 제한
 
-    // Set maximum height to 85% of screen height
-    final maxSheetHeight = screenHeight * 0.85;
-
-    return Container(
-      // Set constraints for maximum height
-      constraints: BoxConstraints(
-        maxHeight: maxSheetHeight,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight,
         ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
         child: IntrinsicHeight(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -317,7 +333,7 @@ class _AddBookmarkBottomSheetState
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '북마크 추가',
+            'bookmarks.add_title'.tr(),
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           IconButton(
@@ -334,23 +350,23 @@ class _AddBookmarkBottomSheetState
       controller: _urlController,
       focusNode: _urlFocusNode,
       decoration: InputDecoration(
-        labelText: 'URL',
-        hintText: 'https://example.com',
+        labelText: 'form.url'.tr(),
+        hintText: 'form.url_hint'.tr(),
         prefixIcon: Icon(Icons.link),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         suffixIcon: _urlController.text.isNotEmpty
             ? IconButton(
-                icon: Icon(Icons.clear),
-                onPressed: () {
-                  _urlController.clear();
-                  ref.read(urlMetadataProvider.notifier).reset();
-                  setState(() {
-                    _showAdditionalFields = false;
-                  });
-                },
-              )
+          icon: Icon(Icons.clear),
+          onPressed: () {
+            _urlController.clear();
+            ref.read(urlMetadataProvider.notifier).reset();
+            setState(() {
+              _showAdditionalFields = false;
+            });
+          },
+        )
             : null,
       ),
       keyboardType: TextInputType.url,
@@ -358,7 +374,7 @@ class _AddBookmarkBottomSheetState
       onChanged: _onUrlChanged,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return "URL을 입력해주세요";
+          return 'error.enter_url'.tr();
         }
 
         // 간단한 URL 검증
@@ -370,10 +386,10 @@ class _AddBookmarkBottomSheetState
         try {
           final uri = Uri.parse(url);
           if (!uri.isAbsolute || !uri.host.contains('.')) {
-            return "유효한 URL을 입력해주세요";
+            return 'error.invalid_url'.tr();
           }
         } catch (e) {
-          return "유효한 URL 형식이 아닙니다";
+          return 'error.url_format'.tr();
         }
 
         return null;
@@ -385,8 +401,8 @@ class _AddBookmarkBottomSheetState
     return TextFormField(
       controller: _titleController,
       decoration: InputDecoration(
-        labelText: '제목 (선택사항)',
-        hintText: '북마크의 제목을 입력하세요',
+        labelText: 'form.title_optional'.tr(),
+        hintText: 'form.title_hint'.tr(),
         prefixIcon: Icon(Icons.title),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -400,8 +416,8 @@ class _AddBookmarkBottomSheetState
     return TextFormField(
       controller: _descriptionController,
       decoration: InputDecoration(
-        labelText: '설명 (선택사항)',
-        hintText: '북마크에 대한 설명을 추가하세요',
+        labelText: 'form.description_optional'.tr(),
+        hintText: 'form.description_hint'.tr(),
         prefixIcon: Icon(Icons.description),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -415,17 +431,17 @@ class _AddBookmarkBottomSheetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("태그", style: TextStyle(fontWeight: FontWeight.bold)),
+        Text('form.tags'.tr(), style: TextStyle(fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: _tags
               .map((tag) => Chip(
-                    label: Text(tag),
-                    deleteIcon: Icon(Icons.close, size: 18),
-                    onDeleted: () => _removeTag(tag),
-                    backgroundColor: Colors.grey[200],
-                  ))
+            label: Text(tag),
+            deleteIcon: Icon(Icons.close, size: 18),
+            onDeleted: () => _removeTag(tag),
+            backgroundColor: Colors.grey[200],
+          ))
               .toList(),
         ),
         Row(
@@ -434,7 +450,7 @@ class _AddBookmarkBottomSheetState
               child: TextFormField(
                 controller: _tagController,
                 decoration: InputDecoration(
-                  hintText: '태그 추가',
+                  hintText: 'form.add_tag'.tr(),
                   prefixIcon: Icon(Icons.tag),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -466,8 +482,8 @@ class _AddBookmarkBottomSheetState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: _isFavorite
-              ? [Color(0xFFFFF8E1), Color(0xFFFFECB3)] // 즐겨찾기 활성화 시 따뜻한 그라데이션
-              : [Colors.white, Colors.grey.shade50], // 비활성화 시 기본 그라데이션
+              ? [Color(0xFFFFF8E1), Color(0xFFFFECB3)]
+              : [Colors.white, Colors.grey.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -491,18 +507,9 @@ class _AddBookmarkBottomSheetState
               setState(() {
                 _isFavorite = !_isFavorite;
               });
-              // 리버팟 상태 업데이트 (필요한 경우)
-              ref.read(bookmarkProvider.notifier).state = ref
-                  .read(bookmarkProvider.notifier)
-                  .state
-                  ?.copyWith(isFavorite: _isFavorite);
             },
-            splashColor: _isFavorite
-                ? Colors.amber.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.1),
-            highlightColor: _isFavorite
-                ? Colors.amber.withOpacity(0.2)
-                : Colors.transparent,
+            splashColor: _isFavorite ? Colors.amber.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+            highlightColor: _isFavorite ? Colors.amber.withOpacity(0.2) : Colors.transparent,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -513,22 +520,18 @@ class _AddBookmarkBottomSheetState
                     curve: Curves.easeInOut,
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _isFavorite
-                          ? Colors.amber.withOpacity(0.2)
-                          : Colors.grey.shade100,
+                      color: _isFavorite ? Colors.amber.withOpacity(0.2) : Colors.grey.shade100,
                       shape: BoxShape.circle,
                     ),
                     child: AnimatedSwitcher(
                       duration: Duration(milliseconds: 300),
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
+                      transitionBuilder: (Widget child, Animation<double> animation) {
                         return ScaleTransition(scale: animation, child: child);
                       },
                       child: Icon(
                         _isFavorite ? Icons.star : Icons.star_border,
                         key: ValueKey<bool>(_isFavorite),
-                        color:
-                            _isFavorite ? Colors.amber : Colors.grey.shade600,
+                        color: _isFavorite ? Colors.amber : Colors.grey.shade600,
                         size: 28,
                       ),
                     ),
@@ -541,25 +544,21 @@ class _AddBookmarkBottomSheetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "즐겨찾기에 추가",
+                          'favorite.add'.tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _isFavorite
-                                ? Colors.amber.shade800
-                                : Colors.black87,
+                            color: _isFavorite ? Colors.amber.shade800 : Colors.black87,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           _isFavorite
-                              ? "북마크 목록의 상단에 표시됩니다"
-                              : "이 북마크를 즐겨찾기에 추가합니다",
+                              ? 'favorite.description'.tr()
+                              : 'favorite.add_description'.tr(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: _isFavorite
-                                ? Colors.amber.shade600
-                                : Colors.grey.shade600,
+                            color: _isFavorite ? Colors.amber.shade600 : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -579,11 +578,6 @@ class _AddBookmarkBottomSheetState
                         setState(() {
                           _isFavorite = value;
                         });
-                        // 리버팟 상태 업데이트 (필요한 경우)
-                        ref.read(bookmarkProvider.notifier).state = ref
-                            .read(bookmarkProvider.notifier)
-                            .state
-                            ?.copyWith(isFavorite: value);
                       },
                     ),
                   ),
@@ -600,11 +594,9 @@ class _AddBookmarkBottomSheetState
     final metadataState = ref.watch(urlMetadataProvider);
     final isUrlEmpty = _urlController.text.trim().isEmpty;
     final isMetadataLoading = metadataState.isLoading;
-    final formHasErrors = _formKey.currentState?.validate() == false;
 
-    // Check all conditions that would make the button disabled
-    final isButtonDisabled =
-        _isProcessing || isUrlEmpty || isMetadataLoading || formHasErrors;
+    // 버튼이 비활성화 되어야 하는 조건
+    final isButtonDisabled = _isProcessing || isUrlEmpty || isMetadataLoading;
 
     return Container(
       width: double.infinity,
@@ -632,23 +624,23 @@ class _AddBookmarkBottomSheetState
         ),
         child: _isProcessing
             ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Text("처리 중...", style: TextStyle(fontSize: 16)),
-                ],
-              )
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('actions.processing'.tr(), style: TextStyle(fontSize: 16)),
+          ],
+        )
             : isMetadataLoading
-                ? Text("URL 정보 가져오는 중...", style: TextStyle(fontSize: 16))
-                : Text("북마크 추가", style: TextStyle(fontSize: 16)),
+            ? Text('loading.url_info'.tr(), style: TextStyle(fontSize: 16))
+            : Text('bookmarks.add_title'.tr(), style: TextStyle(fontSize: 16)),
       ),
     );
   }
@@ -699,7 +691,7 @@ class _AddBookmarkBottomSheetState
                   ),
                 SizedBox(height: 12),
                 Text(
-                  metadata.title ?? "제목 없음",
+                  metadata.title ?? 'form.no_title'.tr(),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 if (metadata.description != null &&
@@ -763,12 +755,12 @@ class _AddBookmarkBottomSheetState
             ),
             SizedBox(height: 16),
             Text(
-              "웹사이트 정보를 가져오는 중...",
+              'loading.website_info'.tr(),
               style: TextStyle(fontSize: 16, color: Colors.grey[700]),
             ),
             SizedBox(height: 8),
             Text(
-              "잠시만 기다려주세요",
+              'loading.please_wait'.tr(),
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
@@ -787,25 +779,23 @@ class _AddBookmarkBottomSheetState
             Icon(Icons.error_outline, color: Colors.red, size: 48),
             SizedBox(height: 16),
             Text(
-              "웹사이트 정보를 가져오지 못했습니다",
+              'error.url_fetch'.tr(),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             SizedBox(height: 8),
             Text(
-              "기본 정보만으로 북마크가 저장됩니다.\n나중에 편집하여 정보를 추가할 수 있습니다.",
+              'error.basic_info'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[700]),
             ),
             SizedBox(height: 12),
             TextButton.icon(
               icon: Icon(Icons.refresh),
-              label: Text("다시 시도"),
+              label: Text('actions.try_again'.tr()),
               onPressed: () {
                 if (_urlController.text.isNotEmpty) {
                   final preparedUrl = _prepareUrl(_urlController.text.trim());
-                  ref
-                      .read(urlMetadataProvider.notifier)
-                      .fetchMetadata(preparedUrl);
+                  ref.read(urlMetadataProvider.notifier).fetchMetadata(preparedUrl);
                 }
               },
             ),

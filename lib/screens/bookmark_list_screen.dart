@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart'; // easy_localization 추가
 
 import '../bookmark_manager.dart';
 import '../common/pressable_button.dart';
@@ -163,7 +164,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
         ],
       ),
       floatingActionButton:
-          !isDeleteMode && !isSearchMode ? _buildAddButton() : null,
+      !isDeleteMode && !isSearchMode ? _buildAddButton() : null,
     );
   }
 
@@ -175,8 +176,10 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       return AppBar(
         backgroundColor: Colors.grey[900],
         elevation: 0,
-        title: Text("태그 검색",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+            'search.tags'.tr(),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
@@ -209,7 +212,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             onPressed: selectedBookmarks.isNotEmpty
                 ? () => _showDeleteConfirmation(context, selectedBookmarks)
                 : null,
-            tooltip: "선택 항목 삭제",
+            tooltip: 'actions.delete'.tr(),
           ),
         ],
       );
@@ -218,13 +221,17 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       return AppBar(
         backgroundColor: Colors.grey[900],
         elevation: 0,
+        title: Text(
+            'bookmarks.list_title'.tr(),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+        ),
         actions: [
           // 태그 검색 버튼
           IconButton(
             icon: Icon(Icons.tag, color: Colors.white),
             onPressed: () =>
-                ref.read(isSearchModeProvider.notifier).state = true,
-            tooltip: "태그 검색",
+            ref.read(isSearchModeProvider.notifier).state = true,
+            tooltip: 'search.tags'.tr(),
           ),
 
           // 그리드/리스트 뷰 전환 버튼
@@ -233,15 +240,15 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
                 color: Colors.white),
             onPressed: () =>
                 ref.read(viewModeProvider.notifier).toggleViewMode(),
-            tooltip: isGridView ? "리스트 뷰로 전환" : "그리드 뷰로 전환",
+            tooltip: isGridView ? 'view.list'.tr() : 'view.grid'.tr(),
           ),
 
           // 삭제 모드 버튼
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.white),
             onPressed: () =>
-                ref.read(isDeleteModeProvider.notifier).state = true,
-            tooltip: "삭제 모드",
+            ref.read(isDeleteModeProvider.notifier).state = true,
+            tooltip: 'actions.delete'.tr(),
           ),
         ],
       );
@@ -262,7 +269,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             focusNode: _searchFocusNode,
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: '태그 검색...',
+              hintText: 'search.hint'.tr(),
               hintStyle: TextStyle(color: Colors.grey),
               prefixIcon: Icon(Icons.search, color: Colors.grey),
               filled: true,
@@ -274,11 +281,11 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               contentPadding: EdgeInsets.symmetric(vertical: 12),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                      icon: Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                    )
+                icon: Icon(Icons.clear, color: Colors.grey),
+                onPressed: () {
+                  _searchController.clear();
+                },
+              )
                   : null,
             ),
           ),
@@ -289,31 +296,34 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             margin: EdgeInsets.only(top: 12),
             child: _filteredTags.isEmpty
                 ? Center(
-                    child:
-                        Text('태그가 없습니다', style: TextStyle(color: Colors.grey)))
+                child: Text(
+                    'search.no_tags'.tr(),
+                    style: TextStyle(color: Colors.grey)
+                )
+            )
                 : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filteredTags.length,
-                    itemBuilder: (context, index) {
-                      final tag = _filteredTags[index];
-                      final isSelected = selectedTags.contains(tag);
+              scrollDirection: Axis.horizontal,
+              itemCount: _filteredTags.length,
+              itemBuilder: (context, index) {
+                final tag = _filteredTags[index];
+                final isSelected = selectedTags.contains(tag);
 
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: FilterChip(
-                          label: Text(tag),
-                          selected: isSelected,
-                          onSelected: (_) => _toggleTagSelection(tag),
-                          backgroundColor: Colors.grey[800],
-                          selectedColor: Colors.blue,
-                          checkmarkColor: Colors.white,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey[300],
-                          ),
-                        ),
-                      );
-                    },
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(tag),
+                    selected: isSelected,
+                    onSelected: (_) => _toggleTagSelection(tag),
+                    backgroundColor: Colors.grey[800],
+                    selectedColor: Colors.blue,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[300],
+                    ),
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -363,11 +373,11 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
     return GestureDetector(
       onLongPress: !isDeleteMode
           ? () {
-              ref.read(isDeleteModeProvider.notifier).state = true;
-              ref.read(selectedBookmarksProvider.notifier).state = {
-                bookmark.id
-              };
-            }
+        ref.read(isDeleteModeProvider.notifier).state = true;
+        ref.read(selectedBookmarksProvider.notifier).state = {
+          bookmark.id
+        };
+      }
           : null,
       child: Stack(
         children: [
@@ -392,7 +402,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color:
-                      isSelected ? Colors.red : Colors.white.withOpacity(0.8),
+                  isSelected ? Colors.red : Colors.white.withOpacity(0.8),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -424,7 +434,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 24),
             Text(
-              "검색 결과가 없습니다",
+              'search.no_results'.tr(),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -441,7 +451,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              child: Text("태그 선택 초기화"),
+              child: Text('search.reset_selection'.tr()),
             ),
           ],
         ),
@@ -467,7 +477,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             ),
             SizedBox(height: 24),
             Text(
-              "북마크가 없습니다",
+              'bookmarks.empty'.tr(),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -478,7 +488,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                "오른쪽 하단의 + 버튼을 눌러 북마크를 추가해보세요",
+                'bookmarks.add_first_hint'.tr(),
                 style: TextStyle(fontSize: 16, color: Colors.grey[400]),
                 textAlign: TextAlign.center,
               ),
@@ -494,7 +504,7 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
                   Icon(Icons.add, size: 24, color: Colors.black),
                   SizedBox(width: 8),
                   Text(
-                    "첫 북마크 추가하기",
+                    'bookmarks.add_first'.tr(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -554,20 +564,25 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
       BuildContext context, Set<String> selectedBookmarks) {
     showCustomConfirmDialog(
       context: context,
-      title: "북마크 삭제",
-      message: "선택한 ${selectedBookmarks.length}개의 북마크를 삭제하시겠습니까?",
-      cancelText: "취소",
-      confirmText: "삭제",
+      title: 'dialog.delete_title'.tr(),
+      message: 'dialog.delete_selected'.tr(args: [selectedBookmarks.length.toString()]),
+      cancelText: 'actions.cancel'.tr(),
+      confirmText: 'actions.delete'.tr(),
       isDestructive: true,
       icon: Icons.delete_forever,
     ).then(
-      (confirmed) {
+          (confirmed) {
         if (confirmed == true) {
           ref
               .read(urlBookmarkProvider.notifier)
               .deleteUrlBookmarks(selectedBookmarks.toList());
           ref.read(selectedBookmarksProvider.notifier).state = {};
           ref.read(isDeleteModeProvider.notifier).state = false;
+
+          // 삭제 후 스낵바 표시
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('bookmarks.deleted'.tr())),
+          );
         }
       },
     );
