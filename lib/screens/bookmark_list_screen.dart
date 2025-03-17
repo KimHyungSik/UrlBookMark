@@ -578,11 +578,6 @@ class _BookmarkListScreenState extends ConsumerState<BookmarkListScreen> {
               .deleteUrlBookmarks(selectedBookmarks.toList());
           ref.read(selectedBookmarksProvider.notifier).state = {};
           ref.read(isDeleteModeProvider.notifier).state = false;
-
-          // 삭제 후 스낵바 표시
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('bookmarks.deleted'.tr())),
-          );
         }
       },
     );
